@@ -35,7 +35,24 @@ def main():
         """)
         choice = input("Enter your choice: ")
         if choice == "1":
-            create_table()
+            database_name = input("Enter database name: ")
+            table_name = input("Table name: ")
+
+            kwargs = {}
+            print("Enter primary keys of table first, followed by all other columns.")
+            
+            while True:
+                colname = input("Enter column name or q if done: ")
+                if colname.lower() == "q":
+                    break
+                if colname in kwargs.keys():
+                    print("Colname exists already, try again.")
+                    continue
+                print("Datatypes are one of {INTEGER, REAL, TEXT, BLOB}")
+                coltype = input("Enter datatype of column: ")
+                kwargs[colname] = coltype
+            
+            create_table(database_name, table_name, kwargs)
         elif choice == "2":
             #add_expense()
             pass
