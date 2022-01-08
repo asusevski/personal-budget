@@ -52,11 +52,11 @@ def main():
                 coltype = input("Enter datatype of column: ")
                 cols[colname] = coltype
 
-                contraint = input("Enter 1 if extra constraints (e.g. PRIMARY KEY, NOT NULL, UNIQUE) for column and 0 otherwise")
+                contraint = input("Enter 1 if extra constraints (e.g. PRIMARY KEY, NOT NULL, UNIQUE) for column and 0 otherwise: ")
                 if contraint == "1":
                     col_constraints = ""
                     while True:
-                        additional_constraint = input("Enter additional constraints of column (e.g. NOT NULL, UNIQUE) or q if done adding constraints: ")
+                        additional_constraint = input("Enter additional constraints of column (e.g. PRIMARY KEY, NOT NULL, UNIQUE) or q if done adding constraints: ")
                         if additional_constraint.lower() == "q":
                             break
                         col_constraints += " " + additional_constraint

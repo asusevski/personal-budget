@@ -38,3 +38,36 @@ def create_table(database_name: str, table_name: str, cols: dict, constraints: d
 
     # Close the connection
     conn.close()
+
+
+def insert_record(database_name: str, table_name: str) -> None:
+    """
+    Inserts a row into a table in the database.
+
+    Parameters:
+        None
+
+    Returns:
+        None
+
+    Requires:
+        None
+
+    Effects:
+        Inserts a row into a table in the database.
+    """
+    import sqlite3
+
+    # Create a database connection
+    conn = sqlite3.connect(database_name)
+    c = conn.cursor()
+
+    # Insert a row of data
+    c.execute("INSERT INTO expenses VALUES ('Rent', '1000', '2018-01-01', 'monthly')")
+
+    # Save (commit) the changes
+    conn.commit()
+
+    # Close the connection
+    conn.close()
+    """
