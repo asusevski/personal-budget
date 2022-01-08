@@ -1,4 +1,4 @@
-from create_table import create_table
+from modify_database import create_table
 import sqlite3
 import sys
 """
@@ -38,21 +38,31 @@ def main():
             database_name = input("Enter database name: ")
             table_name = input("Table name: ")
 
-            kwargs = {}
-            print("Enter primary keys of table first, followed by all other columns.")
+            cols = {}
+            constraints = {}
             
             while True:
                 colname = input("Enter column name or q if done: ")
                 if colname.lower() == "q":
                     break
-                if colname in kwargs.keys():
+                if colname in cols.keys():
                     print("Colname exists already, try again.")
                     continue
                 print("Datatypes are one of {INTEGER, REAL, TEXT, BLOB}")
                 coltype = input("Enter datatype of column: ")
-                kwargs[colname] = coltype
-            
-            create_table(database_name, table_name, kwargs)
+                cols[colname] = coltype
+
+                contraint = input("Enter 1 if extra constraints (e.g. PRIMARY KEY, NOT NULL, UNIQUE) for column and 0 otherwise")
+                if contraint == "1":
+                    col_constraints = ""
+                    while True:
+                        additional_constraint = input("Enter additional constraints of column (e.g. NOT NULL, UNIQUE) or q if done adding constraints: ")
+                        if additional_constraint.lower() == "q":
+                            break
+                        col_constraints += " " + additional_constraint
+                    constraints[colname] = col_constraints
+                
+            create_table(database_name, table_name, cols, constraints)
         elif choice == "2":
             #add_expense()
             pass
