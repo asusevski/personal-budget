@@ -1,4 +1,5 @@
 from modify_database import create_table
+from modify_database import insert_record
 import sqlite3
 import sys
 """
@@ -30,12 +31,14 @@ def main():
     while True:
         print("""
         1. Create a table
-        2. Add an expense
+        2. Insert record into a table
         3. Exit
         """)
         choice = input("Enter your choice: ")
         if choice == "1":
             database_name = input("Enter database name: ")
+            if database_name[-3:] != ".db" or ".sqlite" in database_name:
+                database_name += ".db"
             table_name = input("Table name: ")
 
             cols = {}
@@ -50,41 +53,31 @@ def main():
                     continue
                 print("Datatypes are one of {INTEGER, REAL, TEXT, BLOB}")
                 coltype = input("Enter datatype of column: ")
+                while coltype not in ["INTEGER", "REAL", "TEXT", "BLOB"]:
+                    coltype = input("Invalid data type. Enter datatype of column: ")
                 cols[colname] = coltype
 
-                contraint = input("Enter 1 if extra constraints (e.g. PRIMARY KEY, NOT NULL, UNIQUE) for column and 0 otherwise: ")
-                if contraint == "1":
-                    col_constraints = ""
-                    while True:
-                        additional_constraint = input("Enter additional constraints of column (e.g. PRIMARY KEY, NOT NULL, UNIQUE) or q if done adding constraints: ")
-                        if additional_constraint.lower() == "q":
-                            break
-                        col_constraints += " " + additional_constraint
-                    constraints[colname] = col_constraints
+                constraint = input("Enter constraint(s) (e.g. PRIMARY KEY, NOT NULL, UNIQUE) or q if none: ")
+                if constraint.lower() == "q" or constraint == "": 
+                    continue
+                
+                constraints[colname] = constraint
                 
             create_table(database_name, table_name, cols, constraints)
+
         elif choice == "2":
-            #add_expense()
-            pass
+            database_name = input("Enter database name: ")
+            if database_name[-3:] != ".db" or ".sqlite" in database_name:
+                database_name += ".db"
+            table_name = input("Table name: ")
+            
+            insert_record(database_name, table_name)
+
         elif choice == "3":
             sys.exit()
         else:
             print("Invalid choice")
             continue
-
-    # Get the user's input
-    expense_name = input('Enter the name of the expense: ')
-    expense_amount = input('Enter the amount of the expense: ')
-    expense_date = input('Enter the date of the expense (YYYY-MM-DD): ')
-    expense_date = datetime.strptime(expense_date, '%Y-%m-%d')
-    expense_frequency = input('Enter the frequency of the expense (daily, weekly, monthly, yearly): ')
-
-    # Insert the expense into the database
-    c.execute('INSERT INTO expenses VALUES (?, ?, ?, ?, ?)', (expense_name, expense_amount, expense_date, expense_frequency, 0))
-    conn.commit()
-
-    # Close the connection
-    conn.close()
 
 if __name__ == "__main__":
     main()

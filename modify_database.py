@@ -5,13 +5,11 @@ def create_table(database_name: str, table_name: str, cols: dict, constraints: d
     Parameters:
         database_name (str): Name of the database.
         table_name (str): The name of the table to create.
-        cols (dict): The arguments to pass to the table creation.
+        cols (dict): The names of the columns in the table that will be created.
+        constraints (dict): The constraints to be applied to the columns (eg. PRIMARY KEY etc).
 
     Returns:
         None
-
-    Requires:
-        The first key(s) in the kwargs dictionary are the primary key of the table.
     
     Effects:
         Creates a table in the database.
@@ -45,12 +43,10 @@ def insert_record(database_name: str, table_name: str) -> None:
     Inserts a row into a table in the database.
 
     Parameters:
-        None
+        database_name (str): Name of the database.
+        table_name (str): The name of the table to insert record into.
 
     Returns:
-        None
-
-    Requires:
         None
 
     Effects:
@@ -62,12 +58,21 @@ def insert_record(database_name: str, table_name: str) -> None:
     conn = sqlite3.connect(database_name)
     c = conn.cursor()
 
+    # Print the columns of the table:
+    data = c.execute(f'''SELECT * FROM {table_name}''')
+    col_names = [description[0] for description in data.description]
+    print(f"Columns in table: {col_names}")
+
+    # Get the user's input
+    vals = []
+    for col_name in col_names:
+        vals.append(input(f'Enter {col_name}: '))
+
     # Insert a row of data
-    c.execute("INSERT INTO expenses VALUES ('Rent', '1000', '2018-01-01', 'monthly')")
+    c.execute(f'''INSERT INTO {table_name} VALUES ({str(vals)[1:-1]})''')
 
     # Save (commit) the changes
     conn.commit()
 
     # Close the connection
     conn.close()
-    """
