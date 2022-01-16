@@ -38,6 +38,36 @@ def create_table(database_name: str, table_name: str, cols: dict, constraints: d
     conn.close()
 
 
+def insert_record(database_name: str, table_name: str, vals: list, cols: list = []) -> None:
+    import sqlite3
+
+    # Create a database connection
+    conn = sqlite3.connect(database_name)
+    c = conn.cursor()
+
+    # If unspecified columns to insert values into, then don't use cols
+    # Otherwise, if inserting only some columns (ie: perhaps ignoring ID row)
+    # then specify what columns to insert
+    print("columns:", cols)
+    print("vals:", vals)
+    if cols == []:
+        c.execute(f'''INSERT INTO {table_name} VALUES ({str(vals)[1:-1]})''')
+
+        # Save (commit) the changes
+        conn.commit()
+
+        # Close the connection
+        conn.close()
+    else:
+        c.execute(f'''INSERT INTO {table_name} ({str(cols)[1:-1]}) VALUES ({str(vals)[1:-1]})''')
+
+        # Save (commit) the changes
+        conn.commit()
+
+        # Close the connection
+        conn.close()
+
+
 def insert_record_old(database_name: str, table_name: str) -> None:
     """
     Inserts a row into a table in the database.
@@ -63,7 +93,7 @@ def insert_record_old(database_name: str, table_name: str) -> None:
     col_names = [description[0] for description in data.description]
     print(f"Columns in table: {col_names}")
 
-    print("Enter q to quit at any time.")
+    
 
     while True:
 
@@ -82,18 +112,3 @@ def insert_record_old(database_name: str, table_name: str) -> None:
 
         # Insert a row of data
         c.execute(f'''INSERT INTO {table_name} VALUES ({str(vals)[1:-1]})''')
-
-def insert_record(database_name: str, table_name: str, vals: list, cols: list = []) -> None:
-    import sqlite3
-
-    # Create a database connection
-    conn = sqlite3.connect(database_name)
-    c = conn.cursor()
-
-    # If unspecified columns to insert values into, then don't use cols
-    # Otherwise, if inserting only some columns (ie: perhaps ignoring ID row)
-    # then specify what columns to insert
-    if cols == []:
-        c.execute(f'''INSERT INTO {table_name} VALUES {vals})''')
-    else:
-        c.execute(f'''INSERT INTO {table_name} {str(cols)[1:-1]}VALUES {vals})''')

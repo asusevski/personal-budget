@@ -1,24 +1,36 @@
 from budget import create_expenses
+from budget import create_categories
+from budget import create_payment
 from modify_database import create_table
 from modify_database import insert_record
+import sqlite3
 import sys
+
+
+# Constants:
+HST_TAX_RATE = 0.13
+
 
 def main():
     """
-    Interface to update and maintain sqlite database budget.db (default name)
+    Interface to create, update, and maintain sqlite database budget.db (default name)
 
     User can:
+        - Initialize basic tables in a budget database
         - Create table in database
         - Insert single expense into expenses table
         - Insert receipt of expenses into expenses table
+
     """
     while True:
         print("""
+
         1. Initialize budget database
         2. Create a new table
-        3. Insert a single new expense
-        4. Insert a receipt of expenses
+        3. Insert expenses into expenses table
+        4. Insert a receipt of expenses into expenses table
         5. Exit
+
         """)
         choice = input("Enter your choice: ")
 
@@ -26,11 +38,18 @@ def main():
         if choice == "1":
             database_name = input("Enter database name (default name is budget): ")
 
+            # If no custome database name is entered, use default name
+            if database_name == "":
+                database_name = "budget"
+
             # Adding suffix to database name
             if database_name[-3:] != ".db" or ".sqlite" not in database_name:
                 database_name += ".db"
 
+            # Create basic tables
             create_expenses(database_name)
+            create_categories(database_name)
+            create_payment(database_name)
         
         # Create custom table in db
         if choice == "2":
@@ -62,6 +81,98 @@ def main():
                 constraints[colname] = constraint
                 
             create_table(database_name, table_name, cols, constraints)
+        
+        # Insert expenses into expenses table
+        if choice == "3":
+            database_name = input("Enter database name: ")
+            if database_name[-3:] != ".db" or ".sqlite" in database_name:
+                database_name += ".db"
+        
+            table_name = "expenses"
+
+            # Create a database connection
+            conn = sqlite3.connect(database_name)
+            c = conn.cursor()
+
+            # Print the columns of the table:
+            data = c.execute(f'''SELECT * FROM {table_name}''')
+            col_names = [description[0] for description in data.description]
+
+            # Removing ID since the ID col is autoincrement, we don't have to add it ourselves
+            col_names.remove("ID")
+
+            print(f"Columns in table: {col_names}")
+
+            while True:
+
+                # Get the user's input
+                vals = []
+                for col_name in col_names:
+                    user_input = input(f'Enter {col_name}: ')
+                    vals.append(user_input)
+
+                # Insert a row of data
+                insert_record(database_name=database_name, table_name=table_name, vals=vals, cols=col_names)
+                print("Record inserted.")
+
+                user_input = input('Enter q to quit or any other key to continue entering expenses: ')
+                if user_input == "q":
+                    break
+
+        # Insert a receipt of expenses into expenses table
+        if choice == "4":
+            database_name = input("Enter database name: ")
+            if database_name[-3:] != ".db" or ".sqlite" in database_name:
+                database_name += ".db"
+        
+            table_name = "expenses"
+
+            # Get receipt info
+            receipt_date = input("Enter receipt date: ")
+            receipt_location = input("Enter receipt location: ")
+            receipt_payment = input("Enter receipt Payment ID: ")
+
+            # Create a database connection
+            conn = sqlite3.connect(database_name)
+            c = conn.cursor()
+
+            # Print the columns of the table:
+            data = c.execute(f'''SELECT * FROM {table_name}''')
+            col_names = [description[0] for description in data.description]
+
+            # Removing ID since the ID col is autoincrement, we don't have to add it ourselves
+            # Also removing the columns we found above
+            col_names_input = [col_name for col_name in col_names if col_name not in ["ID", "Date", "Location", "Payment_ID"]]
+
+            print(f"Columns in table: {col_names}")
+
+            while True:
+
+                # Get the user's input
+                vals = []
+                for col_name in col_names_input:
+                    if col_name == "Amount":
+                        print("Enter amount after tax and any discounts that may apply.")
+                    user_input = input(f'Enter {col_name}: ')
+                    vals.append(user_input)
+
+                # Adding receipt info to vals
+                vals.insert(0, receipt_date)
+                vals.insert(2, receipt_location)
+                vals.insert(3, receipt_payment)
+
+                # Insert a row of data
+                insert_record(database_name=database_name, table_name=table_name, vals=vals, cols=col_names)
+                print("Record inserted.")
+
+                user_input = input('Enter q to quit or any other key to continue entering expenses: ')
+                if user_input == "q":
+                    break
+        
+        # Exit
+        if choice == "5":
+            sys.exit()
+
 
 def main_old():
     """
@@ -125,5 +236,3 @@ def main_old():
 
 if __name__ == "__main__":
     main()
-
-# only one category column and categories table just have (ID, Subcategory, Category) but only keep subcategory in expenses
