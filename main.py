@@ -152,10 +152,26 @@ def main():
                 vals = []
                 for col_name in col_names_input:
                     if col_name == "Amount":
-                        print("Enter amount after tax and any discounts that may apply.")
+                        user_input = input(f'Enter {col_name}: ')
+
+                        discount = input('Enter discount as a percent (without the percent sign) if applicable: ')
+                        taxable = input('Is this expense taxable? (y/n): ')
+
+                        if discount != "":
+                            user_input = float(user_input) * (1 - float(discount) / 100)
+                            user_input = str(round(user_input, 2))
+
+                        if taxable == 'y':
+                            user_input = float(user_input) * (1 + HST_TAX_RATE)
+                            # Convert user_input to a two decimal point float and then to a string
+                            user_input = str(round(user_input, 2))
+                        
+                        vals.append(user_input)
+                        continue
+
                     user_input = input(f'Enter {col_name}: ')
                     vals.append(user_input)
-
+                
                 # Adding receipt info to vals
                 vals.insert(0, receipt_date)
                 vals.insert(2, receipt_location)
