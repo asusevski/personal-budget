@@ -27,9 +27,10 @@ def main():
 
         1. Initialize budget database
         2. Create a new table
-        3. Insert expenses into expenses table
-        4. Insert a receipt of expenses into expenses table
-        5. Exit
+        3. Insert rows into any table
+        4. Insert expenses into expenses table
+        5. Insert a receipt of expenses into expenses table
+        6. Exit
 
         """)
         choice = input("Enter your choice: ")
@@ -81,11 +82,50 @@ def main():
                 constraints[colname] = constraint
                 
             create_table(database_name, table_name, cols, constraints)
-        
-        # Insert expenses into expenses table
+
+        # Insert rows into any table
         if choice == "3":
             database_name = input("Enter database name: ")
             if database_name[-3:] != ".db" or ".sqlite" in database_name:
+                database_name += ".db"
+            table_name = input("Table name: ")
+            
+            conn = sqlite3.connect(database_name)
+            c = conn.cursor()
+
+            data = c.execute(f'''SELECT * FROM {table_name}''')
+            col_names = [description[0] for description in data.description]
+
+            # Usually, we don't want to have to enter the ID of the row we're adding. However, that option
+            # will be left in since it's possible that we would want to add a row with a specific ID.
+            specific_id = input("Do you want to enter a specific ID? (y/n): ")
+            if specific_id.lower() == "n":
+                col_names.remove("ID")
+            
+            print(f"Columns in table: {col_names}")
+
+            while True:
+
+                # Get the user's input
+                vals = []
+                for col_name in col_names:
+                    user_input = input(f'Enter {col_name}: ')
+                    vals.append(user_input)
+
+                # Insert a row of data
+                insert_record(database_name=database_name, table_name=table_name, vals=vals, cols=col_names)
+                print("Record inserted.")
+
+                user_input = input('Enter q to quit or any other key to continue entering expenses: ')
+                if user_input == "q":
+                    conn.commit()
+                    c.close()
+                    break
+
+        # Insert expenses into expenses table
+        if choice == "4":
+            database_name = input("Enter database name: ")
+            if database_name[-3:] != ".db" or ".sqlite" not in database_name:
                 database_name += ".db"
         
             table_name = "expenses"
@@ -117,12 +157,14 @@ def main():
 
                 user_input = input('Enter q to quit or any other key to continue entering expenses: ')
                 if user_input == "q":
+                    conn.commit()
+                    c.close()
                     break
 
         # Insert a receipt of expenses into expenses table
-        if choice == "4":
+        if choice == "5":
             database_name = input("Enter database name: ")
-            if database_name[-3:] != ".db" or ".sqlite" in database_name:
+            if database_name[-3:] != ".db" or ".sqlite" not in database_name:
                 database_name += ".db"
         
             table_name = "expenses"
@@ -141,7 +183,8 @@ def main():
             col_names = [description[0] for description in data.description]
 
             # Removing ID since the ID col is autoincrement, we don't have to add it ourselves
-            # Also removing the columns we found above
+            # Also removing the columns we found above (col_names_input will be the names of the columns 
+            # that we actually need to insert specifically)
             col_names_input = [col_name for col_name in col_names if col_name not in ["ID", "Date", "Location", "Payment_ID"]]
 
             print(f"Columns in table: {col_names}")
@@ -171,7 +214,7 @@ def main():
 
                     user_input = input(f'Enter {col_name}: ')
                     vals.append(user_input)
-                
+
                 # Adding receipt info to vals
                 vals.insert(0, receipt_date)
                 vals.insert(2, receipt_location)
@@ -183,10 +226,12 @@ def main():
 
                 user_input = input('Enter q to quit or any other key to continue entering expenses: ')
                 if user_input == "q":
+                    conn.commit()
+                    c.close()
                     break
         
         # Exit
-        if choice == "5":
+        if choice == "6":
             sys.exit()
 
 

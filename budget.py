@@ -5,10 +5,12 @@ def create_expenses(database_name: str) -> None:
     """
     Creates expenses table in the budget.db database.
 
-    The columns of the expense table by default are (ID, Date, Amount, Category, Description)
+    The columns of the expense table by default are (ID, Date, Amount, Location, Payment_ID, Type, Category, Description)
     where ID is the primary key of the expense table, Date is a YYYY-MM-DD date, Amount is a float,
+    Location is a string corresponding to where the expense was made, Payment_ID is the ID of the payment method 
+    (as defined in payment_types table), Type is a string corresponding to the type of expense (want, need, or savings),
     Category is an integer corresponding to the category of the expense as defined in the table Categories, 
-    and Description is a string.
+    and Description is a string that gives further details on the expense.
 
     Only the columns ID, Date, Amount, Location, Payment ID are required.
 
@@ -21,9 +23,20 @@ def create_expenses(database_name: str) -> None:
     Effects:
         Creates a table in the database.
     """
-    cols = {"ID": "INTEGER", "Date": "TEXT", "Amount": "REAL", "Location": "TEXT", "Payment_ID": "INTEGER", "Category": "INTEGER", "Description": "TEXT"}
-    constraints = {"ID": "PRIMARY KEY AUTOINCREMENT", "Date": "NOT NULL CONSTRAINT valid_date CHECK(Date IS date(Date,'+0 days'))", \
-        "Amount": "NOT NULL", "Location": "NOT NULL", "Payment_ID": "NOT NULL"}
+    cols = {"ID": "INTEGER", \
+            "Date": "TEXT", \
+            "Amount": "REAL", \
+            "Location": "TEXT", \
+            "Payment_ID": "INTEGER", \
+            "Type": "TEXT", \
+            "Category": "INTEGER", \
+            "Description": "TEXT"}
+    constraints = {"ID": "PRIMARY KEY AUTOINCREMENT", \
+                   "Date": "NOT NULL CONSTRAINT valid_date CHECK(Date IS date(Date,'+0 days'))", \
+                   "Amount": "NOT NULL",\
+                   "Location": "NOT NULL", \
+                   "Payment_ID": "NOT NULL", \
+                   "Type": "CONSTRAINT valid_type CHECK(Type IN ('want', 'need', 'savings'))"}
     create_table(database_name, "expenses", cols, constraints)
 
 
@@ -48,8 +61,12 @@ def create_categories(database_name: str) -> None:
     Effects:
         Creates a table in the database.
     """
-    cols = {"ID": "INTEGER", "Subcategory": "TEXT", "Category": "TEXT"}
-    constraints = {"ID": "PRIMARY KEY AUTOINCREMENT", "Subcategory": "NOT NULL", "Category": "NOT NULL"}
+    cols = {"ID": "INTEGER",\
+            "Subcategory": "TEXT", \
+            "Category": "TEXT"}
+    constraints = {"ID": "PRIMARY KEY AUTOINCREMENT",\
+                   "Subcategory": "NOT NULL", \
+                   "Category": "NOT NULL"}
     create_table(database_name, "categories", cols, constraints)
 
 
@@ -71,6 +88,8 @@ def create_payment(database_name: str) -> None:
     Effects:
         Creates a table in the database.
     """
-    cols = {"ID": "INTEGER", "Payment_name": "TEXT"}
-    constraints = {"ID": "PRIMARY KEY AUTOINCREMENT", "Payment_name": "NOT NULL"}
+    cols = {"ID": "INTEGER", \
+            "Payment_name": "TEXT"}
+    constraints = {"ID": "PRIMARY KEY AUTOINCREMENT", \
+                   "Payment_name": "NOT NULL"}
     create_table(database_name, "payment_types", cols, constraints)
