@@ -182,12 +182,17 @@ def main():
             data = c.execute(f'''SELECT * FROM {table_name}''')
             col_names = [description[0] for description in data.description]
 
+            # Closing the connection since we don't need it anymore (insert_record opens a new connection)
+            c.close()
+
             # Removing ID since the ID col is autoincrement, we don't have to add it ourselves
+            col_names.remove("ID")
+
             # Also removing the columns we found above (col_names_input will be the names of the columns 
             # that we actually need to insert specifically)
             col_names_input = [col_name for col_name in col_names if col_name not in ["ID", "Date", "Location", "Payment_ID"]]
 
-            print(f"Columns in table: {col_names}")
+            print(f"Columns in table to add: {col_names_input}")
 
             while True:
 
