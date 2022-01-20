@@ -152,7 +152,7 @@ def main():
                     vals.append(user_input)
 
                 # Insert a row of data
-                insert_record(database_name=database_name, table_name=table_name, vals=vals, cols=col_names)
+                insert_record(conn, c, database_name=database_name, table_name=table_name, vals=vals, cols=col_names)
                 print("Record inserted.")
 
                 user_input = input('Enter q to quit or any other key to continue entering expenses: ')
@@ -183,7 +183,7 @@ def main():
             col_names = [description[0] for description in data.description]
 
             # Closing the connection since we don't need it anymore (insert_record opens a new connection)
-            c.close()
+            #c.close()
 
             # Removing ID since the ID col is autoincrement, we don't have to add it ourselves
             col_names.remove("ID")
@@ -217,6 +217,18 @@ def main():
                         vals.append(user_input)
                         continue
 
+                    if col_name == "Category":
+                        print("Categories:")
+                        # query budget.db for all categories
+                        data = c.execute(f'''SELECT * FROM  categories''')
+                        for row in data:
+                            print(row)
+
+                        user_input = input(f'Enter {col_name}: ')
+                        
+                        vals.append(user_input)
+                        continue
+
                     user_input = input(f'Enter {col_name}: ')
                     vals.append(user_input)
 
@@ -226,7 +238,7 @@ def main():
                 vals.insert(3, receipt_payment)
 
                 # Insert a row of data
-                insert_record(database_name=database_name, table_name=table_name, vals=vals, cols=col_names)
+                insert_record(conn, c, database_name=database_name, table_name=table_name, vals=vals, cols=col_names)
                 print("Record inserted.")
 
                 user_input = input('Enter q to quit or any other key to continue entering expenses: ')

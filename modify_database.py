@@ -38,12 +38,12 @@ def create_table(database_name: str, table_name: str, cols: dict, constraints: d
     conn.close()
 
 
-def insert_record(database_name: str, table_name: str, vals: list, cols: list = []) -> None:
-    import sqlite3
+def insert_record(conn, c,  database_name: str, table_name: str, vals: list, cols: list = []) -> None:
+    #import sqlite3
 
     # Create a database connection
-    conn = sqlite3.connect(database_name)
-    c = conn.cursor()
+    #conn = sqlite3.connect(database_name)
+    #c = conn.cursor()
 
     # If unspecified columns to insert values into, then don't use cols
     # Otherwise, if inserting only some columns (ie: perhaps ignoring ID row)
@@ -65,7 +65,7 @@ def insert_record(database_name: str, table_name: str, vals: list, cols: list = 
         conn.commit()
 
         # Close the connection
-        conn.close()
+        #conn.close()
 
 
 def insert_record_old(database_name: str, table_name: str) -> None:
