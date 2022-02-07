@@ -1,3 +1,5 @@
+import sqlite3
+
 def create_table(database_name: str, table_name: str, cols: dict, constraints: dict) -> None:
     """
     Create a table in the database.
@@ -14,7 +16,6 @@ def create_table(database_name: str, table_name: str, cols: dict, constraints: d
     Effects:
         Creates a table in the database.
     """
-    import sqlite3
 
     # Create a database connection
     conn = sqlite3.connect(database_name)
@@ -38,12 +39,11 @@ def create_table(database_name: str, table_name: str, cols: dict, constraints: d
     conn.close()
 
 
-def insert_record(conn, c,  database_name: str, table_name: str, vals: list, cols: list = []) -> None:
-    #import sqlite3
-
+def insert_record(database_name: str, table_name: str, vals: list, cols: list = []) -> None:
+    
     # Create a database connection
-    #conn = sqlite3.connect(database_name)
-    #c = conn.cursor()
+    conn = sqlite3.connect(database_name)
+    c = conn.cursor()
 
     # If unspecified columns to insert values into, then don't use cols
     # Otherwise, if inserting only some columns (ie: perhaps ignoring ID row)
@@ -65,50 +65,4 @@ def insert_record(conn, c,  database_name: str, table_name: str, vals: list, col
         conn.commit()
 
         # Close the connection
-        #conn.close()
-
-
-def insert_record_old(database_name: str, table_name: str) -> None:
-    """
-    Inserts a row into a table in the database.
-
-    Parameters:
-        database_name (str): Name of the database.
-        table_name (str): The name of the table to insert record into.
-
-    Returns:
-        None
-
-    Effects:
-        Inserts a row into a table in the database.
-    """
-    import sqlite3
-
-    # Create a database connection
-    conn = sqlite3.connect(database_name)
-    c = conn.cursor()
-
-    # Print the columns of the table:
-    data = c.execute(f'''SELECT * FROM {table_name}''')
-    col_names = [description[0] for description in data.description]
-    print(f"Columns in table: {col_names}")
-
-    
-
-    while True:
-
-        # Get the user's input
-        vals = []
-        for col_name in col_names:
-            user_input = input(f'Enter {col_name}: ')
-            if user_input == "q":
-                # Save (commit) the changes
-                conn.commit()
-
-                # Close the connection
-                conn.close()
-                return
-            vals.append(user_input)
-
-        # Insert a row of data
-        c.execute(f'''INSERT INTO {table_name} VALUES ({str(vals)[1:-1]})''')
+        conn.close()

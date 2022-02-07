@@ -135,7 +135,12 @@ def main():
             c = conn.cursor()
 
             # Print the columns of the table:
+            # Getting the column names
             data = c.execute(f'''SELECT * FROM {table_name}''')
+            
+            # Closing the connection:
+            conn.close()
+
             col_names = [description[0] for description in data.description]
 
             # Removing ID since the ID col is autoincrement, we don't have to add it ourselves
@@ -148,17 +153,20 @@ def main():
                 # Get the user's input
                 vals = []
                 for col_name in col_names:
+                    if col_name == "Date":
+                        user_input = input(f'Enter {col_name} (YYYY-MM-DD): ')
+                        vals.append(user_input)
+                        continue
+
                     user_input = input(f'Enter {col_name}: ')
                     vals.append(user_input)
 
                 # Insert a row of data
-                insert_record(conn, c, database_name=database_name, table_name=table_name, vals=vals, cols=col_names)
+                insert_record(database_name=database_name, table_name=table_name, vals=vals, cols=col_names)
                 print("Record inserted.")
 
                 user_input = input('Enter q to quit or any other key to continue entering expenses: ')
                 if user_input == "q":
-                    conn.commit()
-                    c.close()
                     break
 
         # Insert a receipt of expenses into expenses table
@@ -170,7 +178,7 @@ def main():
             table_name = "expenses"
 
             # Get receipt info
-            receipt_date = input("Enter receipt date: ")
+            receipt_date = input("Enter receipt date (YYYY-MM-DD): ")
             receipt_location = input("Enter receipt location: ")
             receipt_payment = input("Enter receipt Payment ID: ")
 
@@ -179,26 +187,27 @@ def main():
             c = conn.cursor()
 
             # Print the columns of the table:
-            data = c.execute(f'''SELECT * FROM {table_name}''')
-            col_names = [description[0] for description in data.description]
+            #   Getting the column names:
+            expenses = c.execute(f'''SELECT * FROM {table_name}''')
+            col_names = [description[0] for description in expenses.description]
 
-            # Closing the connection since we don't need it anymore (insert_record opens a new connection)
-            #c.close()
+            # Getting Categories from database (this will be helpful in categorizing each expense of the receipt)
+            categories = list(c.execute(f'''SELECT * FROM  categories''').fetchall())
 
-            # Removing ID since the ID col is autoincrement, we don't have to add it ourselves
-            col_names.remove("ID")
+            # Closing the connection:
+            conn.close()
 
-            # Also removing the columns we found above (col_names_input will be the names of the columns 
-            # that we actually need to insert specifically)
-            col_names_input = [col_name for col_name in col_names if col_name not in ["ID", "Date", "Location", "Payment_ID"]]
+            # Also removing the columns we found above (col_names should be the names of the columns 
+            # that we actually need to insert specifically for each transaction on receipt)
+            col_names = [col_name for col_name in col_names if col_name not in ["ID", "Date", "Location", "Payment_ID"]]
 
-            print(f"Columns in table to add: {col_names_input}")
+            print(f"Columns in table to add: {col_names}")
 
             while True:
 
                 # Get the user's input
                 vals = []
-                for col_name in col_names_input:
+                for col_name in col_names:
                     if col_name == "Amount":
                         user_input = input(f'Enter {col_name}: ')
 
@@ -216,12 +225,13 @@ def main():
                         
                         vals.append(user_input)
                         continue
-
+                    
+                    # Printing Categories to help categorize each expense:
                     if col_name == "Category":
                         print("Categories:")
                         # query budget.db for all categories
-                        data = c.execute(f'''SELECT * FROM  categories''')
-                        for row in data:
+                        
+                        for row in categories:
                             print(row)
 
                         user_input = input(f'Enter {col_name}: ')
@@ -238,79 +248,17 @@ def main():
                 vals.insert(3, receipt_payment)
 
                 # Insert a row of data
-                insert_record(conn, c, database_name=database_name, table_name=table_name, vals=vals, cols=col_names)
+                insert_record(database_name=database_name, table_name=table_name, vals=vals,\
+                     cols=["Date", "Location", "Payment_ID"] + col_names)
                 print("Record inserted.")
 
                 user_input = input('Enter q to quit or any other key to continue entering expenses: ')
                 if user_input == "q":
-                    conn.commit()
-                    c.close()
                     break
         
         # Exit
         if choice == "6":
             sys.exit()
-
-
-def main_old():
-    """
-    Updates database expense.db with new expense or new table.
-    """
-
-    # Connect to the database
-    #conn = sqlite3.connect('expenses.db')
-    #c = conn.cursor()
-
-    while True:
-        print("""
-        1. Create a table
-        2. Insert record into a table
-        3. Exit
-        """)
-        choice = input("Enter your choice: ")
-        if choice == "1":
-            database_name = input("Enter database name: ")
-            if database_name[-3:] != ".db" or ".sqlite" in database_name:
-                database_name += ".db"
-            table_name = input("Table name: ")
-
-            cols = {}
-            constraints = {}
-            
-            while True:
-                colname = input("Enter column name or q if done: ")
-                if colname.lower() == "q":
-                    break
-                if colname in cols.keys():
-                    print("Colname exists already, try again.")
-                    continue
-                print("Datatypes are one of {INTEGER, REAL, TEXT, BLOB}")
-                coltype = input("Enter datatype of column: ")
-                while coltype.lower() not in ["integer", "real", "text", "blob"]:
-                    coltype = input("Invalid data type. Enter datatype of column: ")
-                cols[colname] = coltype
-
-                constraint = input("Enter constraint(s) (e.g. PRIMARY KEY, NOT NULL, UNIQUE) or q if none: ")
-                if constraint.lower() == "q" or constraint == "": 
-                    continue
-                
-                constraints[colname] = constraint
-                
-            create_table(database_name, table_name, cols, constraints)
-
-        elif choice == "2":
-            database_name = input("Enter database name: ")
-            if database_name[-3:] != ".db" or ".sqlite" in database_name:
-                database_name += ".db"
-            table_name = input("Table name: ")
-            
-            insert_record(database_name, table_name)
-
-        elif choice == "3":
-            sys.exit()
-        else:
-            print("Invalid choice")
-            continue
 
 if __name__ == "__main__":
     main()
