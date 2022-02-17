@@ -1,4 +1,4 @@
-from modify_database import create_table
+from modify_database_DEPR import create_table
 
 
 def create_expenses(database_name: str) -> None:

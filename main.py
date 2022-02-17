@@ -1,8 +1,8 @@
-from budget import create_expenses
-from budget import create_categories
-from budget import create_payment
-from modify_database import create_table
-from modify_database import insert_record
+from initialize_db import create_expenses
+from initialize_db import create_categories
+from initialize_db import create_payment
+from modify_database_DEPR import create_table
+from modify_database_DEPR import insert_record
 import sqlite3
 import sys
 
