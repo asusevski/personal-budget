@@ -1,12 +1,24 @@
-from enum import Enum, auto
+from dataclasses import dataclass
+from manage_database import insert_into_table
 
-class ExpenseCategoryID(Enum):
-    food = auto()
-    travel = auto()
-    entertainment = auto()
-    shopping = auto()
-    utilities = auto()
-    other = auto()
 
-class ExpenseSubcategoryID(Enum):
-    meat = auto()
+@dataclass
+class ExpenseCategory():
+    """
+    This class stores the category and subcategory of an expense.
+
+    
+    Attributes:
+        category: The category of the expense (eg 'Food', 'Transportation', etc.)
+        subcategory: The subcategory of the expense (eg  'chicken', 'uber', 'taxi', etc.)
+                     This is optional and can be left blank if the category is sufficient to describe the expense.
+    """
+    id: int
+    category: str
+    subcategory: str
+
+    def insert_into_db(self, database_name: str):
+        """
+        Inserts the expense category into the database.
+        """
+        insert_into_table(database_name, 'categories', values=[self.id, self.category, self.subcategory])

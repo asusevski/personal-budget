@@ -1,14 +1,14 @@
-from initialize_db import create_expenses
-from initialize_db import create_categories
-from initialize_db import create_payment
-from modify_database_DEPR import create_table
-from modify_database_DEPR import insert_record
-import sqlite3
+from expense_category import ExpenseCategory
+from expenses import Expense
+from manage_database import initialize_empty_db
+#from manage_database import insert_into_table
+from manage_database import is_table_empty
+from manage_database import print_table
+from manage_database import query_db
+from ledger import LedgerEntry
+from payment_type import PaymentType
+from receipt import Receipt
 import sys
-
-
-# Constants:
-HST_TAX_RATE = 0.13
 
 
 def main():
@@ -26,11 +26,10 @@ def main():
         print("""
 
         1. Initialize budget database
-        2. Create a new table
-        3. Insert rows into any table
-        4. Insert expenses into expenses table
-        5. Insert a receipt of expenses into expenses table
-        6. Exit
+        2. Insert rows into any table
+        3. Insert expenses into expenses table
+        4. Insert a receipt of expenses into expenses table
+        5. Exit
 
         """)
         choice = input("Enter your choice: ")
@@ -47,218 +46,134 @@ def main():
             if database_name[-3:] != ".db" or ".sqlite" not in database_name:
                 database_name += ".db"
 
-            # Create basic tables
-            create_expenses(database_name)
-            create_categories(database_name)
-            create_payment(database_name)
-        
-        # Create custom table in db
+            # Initialize empty database
+            initialize_empty_db(database_name)
+
+            # Enter payment types:
+            print("Initializing payment types...")
+            payment_id = 1
+            while True:
+                payment_name = input("Enter payment name (eg: VisaXXXX, Cash, Checking, Bitcoin, etc..) or q to exit: ")
+                if payment_name == "" or payment_name.lower() == "q":
+                    break
+                payment_description = input("Enter payment description (can be left blank): ")
+                payment_type = PaymentType(payment_id, payment_name, payment_description)
+                payment_type.insert_into_db(database_name)
+                payment_id += 1
+
+            # Enter expense categories:
+            print("Initializing expense categories...")
+            # NOTE: FIX THIS
+            print("Each category entry will have a category and a subcategory.")
+            print("The category will be a broad categorization and the subcategory, an optional field, will be \
+                used to make the category more clear (particularly useful for groceries -- one may want to \
+                have the category be listed as \"groceries\" but have the subcategory be \"bread\" \
+                or \"fruits\", for example).")
+            category_id = 1
+            while True:
+                category_name = input("Enter category name (eg: grocery, bills, etc...) or q to exit: ")
+                if category_name == "" or category_name == "q":
+                    break
+                subcategory = input("Enter subcategory (can be left blank): ")
+                expense_category = ExpenseCategory(category_id, category_name, subcategory)
+                expense_category.insert_into_db(database_name)
+                category_id += 1
+
         if choice == "2":
-            database_name = input("Enter database name: ")
-            if database_name[-3:] != ".db" or ".sqlite" in database_name:
-                database_name += ".db"
-            table_name = input("Table name: ")
+            print("try later.")
 
-            cols = {}
-            constraints = {}
-            
-            while True:
-                colname = input("Enter column name or q if done: ")
-                if colname.lower() == "q":
-                    break
-                if colname in cols.keys():
-                    print("Colname exists already, try again.")
-                    continue
-                print("Datatypes are one of {INTEGER, REAL, TEXT, BLOB}")
-                coltype = input("Enter datatype of column: ")
-                while coltype.lower() not in ["integer", "real", "text", "blob"]:
-                    coltype = input("Invalid data type. Enter datatype of column: ")
-                cols[colname] = coltype
-
-                constraint = input("Enter constraint(s) (e.g. PRIMARY KEY, NOT NULL, UNIQUE) or q if none: ")
-                if constraint.lower() == "q" or constraint == "": 
-                    continue
-                
-                constraints[colname] = constraint
-                
-            create_table(database_name, table_name, cols, constraints)
-
-        # Insert rows into any table
         if choice == "3":
-            database_name = input("Enter database name: ")
-            if database_name[-3:] != ".db" or ".sqlite" in database_name:
-                database_name += ".db"
-            table_name = input("Table name: ")
-            
-            conn = sqlite3.connect(database_name)
-            c = conn.cursor()
+            print("try later.")
 
-            data = c.execute(f'''SELECT * FROM {table_name}''')
-            col_names = [description[0] for description in data.description]
-
-            # Usually, we don't want to have to enter the ID of the row we're adding. However, that option
-            # will be left in since it's possible that we would want to add a row with a specific ID.
-            specific_id = input("Do you want to enter a specific ID? (y/n): ")
-            if specific_id.lower() == "n":
-                col_names.remove("ID")
-            
-            print(f"Columns in table: {col_names}")
-
-            while True:
-
-                # Get the user's input
-                vals = []
-                for col_name in col_names:
-                    user_input = input(f'Enter {col_name}: ')
-                    vals.append(user_input)
-
-                # Insert a row of data
-                insert_record(database_name=database_name, table_name=table_name, vals=vals, cols=col_names)
-                print("Record inserted.")
-
-                user_input = input('Enter q to quit or any other key to continue entering expenses: ')
-                if user_input == "q":
-                    conn.commit()
-                    c.close()
-                    break
-
-        # Insert expenses into expenses table
+        # Enter a receipt of expenses
         if choice == "4":
             database_name = input("Enter database name: ")
             if database_name[-3:] != ".db" or ".sqlite" not in database_name:
                 database_name += ".db"
-        
-            table_name = "expenses"
-
-            # Create a database connection
-            conn = sqlite3.connect(database_name)
-            c = conn.cursor()
-
-            # Print the columns of the table:
-            # Getting the column names
-            data = c.execute(f'''SELECT * FROM {table_name}''')
             
-            # Closing the connection:
-            conn.close()
-
-            col_names = [description[0] for description in data.description]
-
-            # Removing ID since the ID col is autoincrement, we don't have to add it ourselves
-            col_names.remove("ID")
-
-            print(f"Columns in table: {col_names}")
-
-            while True:
-
-                # Get the user's input
-                vals = []
-                for col_name in col_names:
-                    if col_name == "Date":
-                        user_input = input(f'Enter {col_name} (YYYY-MM-DD): ')
-                        vals.append(user_input)
-                        continue
-
-                    user_input = input(f'Enter {col_name}: ')
-                    vals.append(user_input)
-
-                # Insert a row of data
-                insert_record(database_name=database_name, table_name=table_name, vals=vals, cols=col_names)
-                print("Record inserted.")
-
-                user_input = input('Enter q to quit or any other key to continue entering expenses: ')
-                if user_input == "q":
-                    break
-
-        # Insert a receipt of expenses into expenses table
-        if choice == "5":
-            database_name = input("Enter database name: ")
-            if database_name[-3:] != ".db" or ".sqlite" not in database_name:
-                database_name += ".db"
-        
-            table_name = "expenses"
-
-            # Get receipt info
+            # Get receipt id (select max(id) from receipts + 1)
+            # First, checking if the table is empty
+            if is_table_empty(database_name, "receipts"):
+                receipt_id = 1
+            else:
+                receipt_id = query_db(database_name, '''SELECT max(id) FROM receipts''')[0][0] + 1
+            
+            # Get receipt date:
             receipt_date = input("Enter receipt date (YYYY-MM-DD): ")
+
+            # Get receipt location:
             receipt_location = input("Enter receipt location: ")
-            receipt_payment = input("Enter receipt Payment ID: ")
 
-            # Create a database connection
-            conn = sqlite3.connect(database_name)
-            c = conn.cursor()
+            # Get expenses from receipt:
+            print("Now enter each item on the receipt...")
 
-            # Print the columns of the table:
-            #   Getting the column names:
-            expenses = c.execute(f'''SELECT * FROM {table_name}''')
-            col_names = [description[0] for description in expenses.description]
-
-            # Getting Categories from database (this will be helpful in categorizing each expense of the receipt)
-            categories = list(c.execute(f'''SELECT * FROM  categories''').fetchall())
-
-            # Closing the connection:
-            conn.close()
-
-            # Also removing the columns we found above (col_names should be the names of the columns 
-            # that we actually need to insert specifically for each transaction on receipt)
-            col_names = [col_name for col_name in col_names if col_name not in ["ID", "Date", "Location", "Payment_ID"]]
-
-            print(f"Columns in table to add: {col_names}")
-
+            # We'll get the recept total by adding up the price for each expense
+            receipt_total = 0
+            expenses = []
             while True:
-
-                # Get the user's input
-                vals = []
-                for col_name in col_names:
-                    if col_name == "Amount":
-                        user_input = input(f'Enter {col_name}: ')
-
-                        discount = input('Enter discount as a percent (without the percent sign) if applicable: ')
-                        taxable = input('Is this expense taxable? (y/n): ')
-
-                        if discount != "":
-                            user_input = float(user_input) * (1 - float(discount) / 100)
-                            user_input = str(round(user_input, 2))
-
-                        if taxable == 'y':
-                            user_input = float(user_input) * (1 + HST_TAX_RATE)
-                            # Convert user_input to a two decimal point float and then to a string
-                            user_input = str(round(user_input, 2))
-                        
-                        vals.append(user_input)
-                        continue
-                    
-                    # Printing Categories to help categorize each expense:
-                    if col_name == "Category":
-                        print("Categories:")
-                        # query budget.db for all categories
-                        
-                        for row in categories:
-                            print(row)
-
-                        user_input = input(f'Enter {col_name}: ')
-                        
-                        vals.append(user_input)
-                        continue
-
-                    user_input = input(f'Enter {col_name}: ')
-                    vals.append(user_input)
-
-                # Adding receipt info to vals
-                vals.insert(0, receipt_date)
-                vals.insert(2, receipt_location)
-                vals.insert(3, receipt_payment)
-
-                # Insert a row of data
-                insert_record(database_name=database_name, table_name=table_name, vals=vals,\
-                     cols=["Date", "Location", "Payment_ID"] + col_names)
-                print("Record inserted.")
-
-                user_input = input('Enter q to quit or any other key to continue entering expenses: ')
-                if user_input == "q":
+                expense_name = input("Enter expense name (or q to exit): ")
+                if expense_name == "" or expense_name.lower() == "q":
                     break
-        
-        # Exit
-        if choice == "6":
+                expense_amount = input("Enter expense amount ($): ")
+
+                receipt_total += float(expense_amount)
+
+                expense_type = input("Enter type of expense (want, need, or savings): ")
+                print("Select expense category id (see categories below): ")
+                print_table(database_name, "expense_categories")
+                expense_category_id = input("Enter expense category id: ")
+
+                # Getting expense category:
+                query = query_db(database_name, f"SELECT * FROM categories WHERE id = {expense_category_id}")
+                expense_category = ExpenseCategory(query[0][0], query[0][1], query[0][2])
+
+                expenses.append([expense_name, expense_amount, expense_type, expense_category])
+            
+            # Check that the receipt total makes sense:
+            print("Total for the receipt is: ${:.2f}".format(receipt_total))
+            cmd = input("Enter any button to confirm or q to cancel: ")
+            if cmd.lower() == "q":
+                break
+
+            # Entering receipt into receipts table and expenses into expense table:
+            receipt = Receipt(receipt_id, receipt_date, receipt_location, "{:.2f}".format(receipt_total))
+            receipt.insert_into_db(database_name)
+            for expense in expenses:
+                expense_name = expense[0]
+                expense_amount = expense[1]
+                expense_type = expense[2]
+                expense_category = expense[3]
+                expense = Expense(item=expense_name, amount=expense_amount, type=expense_type,\
+                    receipt=receipt, category=expense_category)
+                expense.insert_into_db(database_name, receipt_id)
+
+
+            print("How did you pay?")
+            while True:
+                print("Enter q to exit at any time.")
+                print("Select payment id (see payment types below): ")
+                print_table(database_name, "payment_types")
+                payment_id = input("Enter payment id: ")
+                if payment_id == "q":
+                    break
+
+                # Getting payment type:
+                query = query_db(database_name, f"SELECT * FROM payment_types WHERE id = {payment_id}")
+                payment_type = PaymentType(query[0][0], query[0][1], query[0][2])
+
+                print("How much of the receipt did you pay with this payment type?")
+                payment_amount = input("Enter payment amount ($): ")
+                if payment_amount == "q".lower():
+                    break
+
+                # Insert entry into ledger table:
+                ledger_entry = LedgerEntry(amount=payment_amount, receipt=receipt, payment_type=payment_type)
+                ledger_entry.insert_into_db(database_name, receipt_id)
+
+        # Quit
+        if choice == "5":
             sys.exit()
+
 
 if __name__ == "__main__":
     main()
