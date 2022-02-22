@@ -22,5 +22,6 @@ class Receipt:
         Effects:
             Modifies table 'receipts' in the database.
         """
-        insert_into_table(database_name, 'receipts', values=[self.id, self.total, self.date, self.location])
+        insert_into_table(database_name, 'receipts', cols=['total', 'date', 'location'], \
+                          values=[self.id, self.total, self.date, self.location])
         

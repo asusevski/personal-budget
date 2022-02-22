@@ -1,7 +1,7 @@
 from expense_category import ExpenseCategory
 from expenses import Expense
 from manage_database import initialize_empty_db
-from manage_database import insert_obj_into_db
+#from manage_database import insert_obj_into_db
 from manage_database import is_table_empty
 from manage_database import print_table
 from manage_database import query_db
@@ -58,7 +58,7 @@ def main():
                     break
                 payment_description = input("Enter payment description (can be left blank): ")
                 payment_type = PaymentType(payment_id, payment_name, payment_description)
-                insert_obj_into_db(database_name, payment_type)
+                payment_type.insert_into_db(database_name)
                 payment_id += 1
 
             # Enter expense categories:
@@ -75,7 +75,7 @@ as \'groceries\' and the subcategory be \'chicken\', for example).")
                     break
                 subcategory = input("Enter subcategory (can be left blank): ")
                 expense_category = ExpenseCategory(category_id, category_name, subcategory)
-                insert_obj_into_db(database_name, expense_category)
+                expense_category.insert_into_db(database_name)
                 category_id += 1
 
         if choice == "2":
@@ -94,8 +94,9 @@ as \'groceries\' and the subcategory be \'chicken\', for example).")
             # First, checking if the table is empty
             if is_table_empty(database_name, "receipts"):
                 receipt_id = 1
-            else:
-                receipt_id = query_db(database_name, '''SELECT max(id) FROM receipts''')[0][0] + 1
+            # NOTE: here's the part where we homebrew the receipt id that we want to get rid of.
+            #else:
+            #    receipt_id = query_db(database_name, "SELECT MAX(id) FROM receipts")[0][0] + 1
             
             # Get receipt date:
             receipt_date = input("Enter receipt date (YYYY-MM-DD): ")
@@ -135,8 +136,9 @@ as \'groceries\' and the subcategory be \'chicken\', for example).")
                 break
 
             # Entering receipt into receipts table and expenses into expense table:
-            receipt = Receipt(receipt_id, receipt_date, receipt_location, "{:.2f}".format(receipt_total))
-            insert_obj_into_db(database_name, receipt)
+            # NOTE: this is dumb? initializing receipt id with -1 just to insert it and get the real id is dumb?
+            receipt = Receipt(-1, receipt_date, receipt_location, "{:.2f}".format(receipt_total))
+            receipt.insert_into_db(database_name)
             for expense in expenses:
                 expense_name = expense[0]
                 expense_amount = expense[1]
@@ -144,7 +146,7 @@ as \'groceries\' and the subcategory be \'chicken\', for example).")
                 expense_category = expense[3]
                 expense = Expense(item=expense_name, amount=expense_amount, type=expense_type,\
                     receipt=receipt, category=expense_category)
-                insert_obj_into_db(database_name, expense)
+                expense.insert_into_db(database_name)
 
 
             print("How did you pay?")
@@ -167,7 +169,7 @@ as \'groceries\' and the subcategory be \'chicken\', for example).")
 
                 # Insert entry into ledger table:
                 ledger_entry = LedgerEntry(amount=payment_amount, receipt=receipt, payment_type=payment_type)
-                insert_obj_into_db(database_name, ledger_entry)
+                ledger_entry.insert_into_db(database_name)
 
         # Quit
         if choice == "5":

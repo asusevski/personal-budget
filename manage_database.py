@@ -142,7 +142,7 @@ def initialize_empty_db(database_name: str):
 
         # Receipts table (stores details about a single receipt eg: receipt number, amount, date)
         c.execute("""CREATE TABLE IF NOT EXISTS receipts (
-            id INTEGER PRIMARY KEY,
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
             amount REAL NOT NULL,
             date TEXT NOT NULL CONSTRAINT valid_date CHECK(Date IS date(Date,'+0 days')),
             location TEXT NOT NULL
