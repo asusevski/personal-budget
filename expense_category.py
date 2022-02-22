@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from manage_database import insert_into_table
 
 
 @dataclass
@@ -16,9 +15,3 @@ class ExpenseCategory():
     id: int
     category: str
     subcategory: str
-
-    def insert_into_db(self, database_name: str):
-        """
-        Inserts the expense category into the database.
-        """
-        insert_into_table(database_name, 'categories', values=[self.id, self.category, self.subcategory])

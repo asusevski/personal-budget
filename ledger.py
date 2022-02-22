@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from manage_database import insert_into_table
 from receipt import Receipt
 from payment_type import PaymentType
 
@@ -17,10 +16,3 @@ class LedgerEntry():
     amount: str
     receipt: Receipt
     payment_type: PaymentType
-
-    def insert_into_db(self, database_name: str):
-        """
-        Inserts the ledger entry into the database.
-        """
-        insert_into_table(database_name, 'ledger', values=[self.date, self.receipt.id, self.payment_type.id],
-                                                   cols=['amount', 'receipt_id', 'payment_type_id'])

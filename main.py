@@ -1,7 +1,7 @@
 from expense_category import ExpenseCategory
 from expenses import Expense
 from manage_database import initialize_empty_db
-#from manage_database import insert_into_table
+from manage_database import insert_obj_into_db
 from manage_database import is_table_empty
 from manage_database import print_table
 from manage_database import query_db
@@ -58,17 +58,16 @@ def main():
                     break
                 payment_description = input("Enter payment description (can be left blank): ")
                 payment_type = PaymentType(payment_id, payment_name, payment_description)
-                payment_type.insert_into_db(database_name)
+                insert_obj_into_db(database_name, payment_type)
                 payment_id += 1
 
             # Enter expense categories:
-            print("Initializing expense categories...")
-            # NOTE: FIX THIS
-            print("Each category entry will have a category and a subcategory.")
-            print("The category will be a broad categorization and the subcategory, an optional field, will be \
-                used to make the category more clear (particularly useful for groceries -- one may want to \
-                have the category be listed as \"groceries\" but have the subcategory be \"bread\" \
-                or \"fruits\", for example).")
+            # I know this looks stupid ignore for now
+            print("Initializing expense categories...\nEach category entry will have a category and subcategory.\nThe \
+category will be a broad categorization and the subcategory, an optional field, will be used to make \
+the category more clear (particularly useful for groceries -- one may want to have the category be listed \
+as \'groceries\' and the subcategory be \'chicken\', for example).")
+
             category_id = 1
             while True:
                 category_name = input("Enter category name (eg: grocery, bills, etc...) or q to exit: ")
@@ -76,7 +75,7 @@ def main():
                     break
                 subcategory = input("Enter subcategory (can be left blank): ")
                 expense_category = ExpenseCategory(category_id, category_name, subcategory)
-                expense_category.insert_into_db(database_name)
+                insert_obj_into_db(database_name, expense_category)
                 category_id += 1
 
         if choice == "2":
@@ -137,7 +136,7 @@ def main():
 
             # Entering receipt into receipts table and expenses into expense table:
             receipt = Receipt(receipt_id, receipt_date, receipt_location, "{:.2f}".format(receipt_total))
-            receipt.insert_into_db(database_name)
+            insert_obj_into_db(database_name, receipt)
             for expense in expenses:
                 expense_name = expense[0]
                 expense_amount = expense[1]
@@ -145,7 +144,7 @@ def main():
                 expense_category = expense[3]
                 expense = Expense(item=expense_name, amount=expense_amount, type=expense_type,\
                     receipt=receipt, category=expense_category)
-                expense.insert_into_db(database_name, receipt_id)
+                insert_obj_into_db(database_name, expense)
 
 
             print("How did you pay?")
@@ -168,7 +167,7 @@ def main():
 
                 # Insert entry into ledger table:
                 ledger_entry = LedgerEntry(amount=payment_amount, receipt=receipt, payment_type=payment_type)
-                ledger_entry.insert_into_db(database_name, receipt_id)
+                insert_obj_into_db(database_name, ledger_entry)
 
         # Quit
         if choice == "5":
