@@ -1,11 +1,6 @@
 from contextlib import contextmanager
-from expenses import Expense
-from expense_category import ExpenseCategory
-from ledger import LedgerEntry
 import logging
-from payment_type import PaymentType
 from prettytable import from_db_cursor
-from receipt import Receipt
 import sqlite3
 
 
@@ -138,7 +133,6 @@ def initialize_empty_db(database_name: str):
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             item TEXT NOT NULL,
             amount REAL NOT NULL,
-            location TEXT NOT NULL,
             type TEXT NOT NULL CONSTRAINT valid_type CHECK(Type IN ('want', 'need', 'savings')),
             receipt_id INTEGER NOT NULL,
             item_category_id INTEGER NOT NULL,
@@ -201,33 +195,3 @@ def is_table_empty(database_name: str, table_name: str) -> bool:
     """
     row = query_db(database_name, f"SELECT * FROM {table_name} limit 1")
     return len(row) == 0
-
-
-def insert_obj_into_db(database_name: str, obj: object) -> None:
-    """
-    Insert an object into the database.
-
-    Args:
-        database_name: The name of the database to insert the object into.
-        obj: The object to insert into the database.
-    """
-    with create_connection(database_name) as c:
-        if isinstance(obj, PaymentType):
-            insert_into_table(database_name, 'payment_types', values=[obj.id, obj.name, obj.description])
-
-        elif isinstance(obj, ExpenseCategory):
-            insert_into_table(database_name, 'categories', values=[obj.id, obj.category, obj.subcategory])
-
-        elif isinstance(obj, Expense):
-            insert_into_table(database_name, 'expenses', cols=['item','amount', 'type', 'receipt_id', 'item_category_id'],\
-                              values=[obj.item, obj.amount, obj.type, obj.receipt.id, obj.category.id])
-        
-        elif isinstance(obj, Receipt):
-            insert_into_table(database_name, 'receipts', values=[obj.id, obj.total, obj.date, obj.location])
-
-        elif isinstance(obj, LedgerEntry):
-            insert_into_table(database_name, 'ledger', values=[obj.date, obj.receipt.id, obj.payment_type.id], \
-                              cols=['amount', 'receipt_id', 'payment_type_id'])
-        
-        else:
-            logging.error(f"Invalid object type {type(obj)}")
