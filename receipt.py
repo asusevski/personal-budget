@@ -4,12 +4,12 @@ from manage_database import insert_into_table
 
 @dataclass
 class Receipt:
-    id: int
+    # id: int
     total: float
     date: str
     location: str
 
-    def insert_into_db(self, database_name: str) -> None:
+    def insert_into_db(self, database_name: str) -> int:
         """
         Insert the receipt into the database.
 
@@ -17,11 +17,13 @@ class Receipt:
             database_name: The name of the database to insert the payment type into.
 
         Returns:
-            None
+            The ID of the receipt in the database.
 
         Effects:
             Modifies table 'receipts' in the database.
         """
-        insert_into_table(database_name, 'receipts', cols=['total', 'date', 'location'], \
-                          values=[self.id, self.total, self.date, self.location])
-        
+        receipt_id = insert_into_table(database_name, 'receipts', cols=['total', 'date', 'location'], \
+                          values=[self.total, self.date, self.location])
+        return receipt_id
+
+

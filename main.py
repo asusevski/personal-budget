@@ -1,8 +1,8 @@
 from expense_category import ExpenseCategory
 from expenses import Expense
 from manage_database import initialize_empty_db
-#from manage_database import insert_obj_into_db
-from manage_database import is_table_empty
+# from manage_database import insert_obj_into_db
+# from manage_database import is_table_empty
 from manage_database import print_table
 from manage_database import query_db
 from ledger import LedgerEntry
@@ -51,15 +51,16 @@ def main():
 
             # Enter payment types:
             print("Initializing payment types...")
-            payment_id = 1
+            #payment_id = 1
             while True:
                 payment_name = input("Enter payment name (eg: VisaXXXX, Cash, Checking, Bitcoin, etc..) or q to exit: ")
                 if payment_name == "" or payment_name.lower() == "q":
                     break
                 payment_description = input("Enter payment description (can be left blank): ")
-                payment_type = PaymentType(payment_id, payment_name, payment_description)
+                #payment_type = PaymentType(payment_id, payment_name, payment_description)
+                payment_type = PaymentType(payment_name, payment_description)
                 payment_type.insert_into_db(database_name)
-                payment_id += 1
+                #payment_id += 1
 
             # Enter expense categories:
             # I know this looks stupid ignore for now
@@ -68,15 +69,16 @@ category will be a broad categorization and the subcategory, an optional field, 
 the category more clear (particularly useful for groceries -- one may want to have the category be listed \
 as \'groceries\' and the subcategory be \'chicken\', for example).")
 
-            category_id = 1
+            #category_id = 1
             while True:
                 category_name = input("Enter category name (eg: grocery, bills, etc...) or q to exit: ")
                 if category_name == "" or category_name == "q":
                     break
                 subcategory = input("Enter subcategory (can be left blank): ")
-                expense_category = ExpenseCategory(category_id, category_name, subcategory)
+                #expense_category = ExpenseCategory(category_id, category_name, subcategory)
+                expense_category = ExpenseCategory(category_name, subcategory)
                 expense_category.insert_into_db(database_name)
-                category_id += 1
+                #category_id += 1
 
         if choice == "2":
             print("try later.")
@@ -89,15 +91,7 @@ as \'groceries\' and the subcategory be \'chicken\', for example).")
             database_name = input("Enter database name: ")
             if database_name[-3:] != ".db" or ".sqlite" not in database_name:
                 database_name += ".db"
-            
-            # Get receipt id (select max(id) from receipts + 1)
-            # First, checking if the table is empty
-            if is_table_empty(database_name, "receipts"):
-                receipt_id = 1
-            # NOTE: here's the part where we homebrew the receipt id that we want to get rid of.
-            #else:
-            #    receipt_id = query_db(database_name, "SELECT MAX(id) FROM receipts")[0][0] + 1
-            
+
             # Get receipt date:
             receipt_date = input("Enter receipt date (YYYY-MM-DD): ")
 
@@ -119,15 +113,11 @@ as \'groceries\' and the subcategory be \'chicken\', for example).")
                 receipt_total += float(expense_amount)
 
                 expense_type = input("Enter type of expense (want, need, or savings): ")
-                print("Select expense category id (see categories below): ")
-                print_table(database_name, "expense_categories")
-                expense_category_id = input("Enter expense category id: ")
+                print(f"Select expense category id for {expense_name} (see categories below): ")
+                print_table(database_name, "categories")
+                expense_category_id = input(f"Enter expense category id for {expense_name}: ")
 
-                # Getting expense category:
-                query = query_db(database_name, f"SELECT * FROM categories WHERE id = {expense_category_id}")
-                expense_category = ExpenseCategory(query[0][0], query[0][1], query[0][2])
-
-                expenses.append([expense_name, expense_amount, expense_type, expense_category])
+                expenses.append([expense_name, expense_amount, expense_type, expense_category_id])
             
             # Check that the receipt total makes sense:
             print("Total for the receipt is: ${:.2f}".format(receipt_total))
@@ -135,40 +125,36 @@ as \'groceries\' and the subcategory be \'chicken\', for example).")
             if cmd.lower() == "q":
                 break
 
-            # Entering receipt into receipts table and expenses into expense table:
-            # NOTE: this is dumb? initializing receipt id with -1 just to insert it and get the real id is dumb?
-            receipt = Receipt(-1, receipt_date, receipt_location, "{:.2f}".format(receipt_total))
-            receipt.insert_into_db(database_name)
+            receipt = Receipt(total="{:.2f}".format(receipt_total), date=receipt_date, location=receipt_location)
+
+            # Inserting receipt into receipts table and have the method return the autoincrement ID
+            receipt_id = receipt.insert_into_db(database_name)
             for expense in expenses:
                 expense_name = expense[0]
                 expense_amount = expense[1]
                 expense_type = expense[2]
-                expense_category = expense[3]
+                expense_category_id = expense[3]
                 expense = Expense(item=expense_name, amount=expense_amount, type=expense_type,\
-                    receipt=receipt, category=expense_category)
+                    receipt_id=receipt_id, category_id=expense_category_id)
                 expense.insert_into_db(database_name)
 
-
             print("How did you pay?")
-            while True:
-                print("Enter q to exit at any time.")
-                print("Select payment id (see payment types below): ")
+            tol = 10e-4
+            while abs(receipt_total) >= tol:
+                #print("Enter q to exit at any time.")
+                print("Remaining on receipt: ${:.2f}".format(receipt_total))
+                print("Select payment id used to pay (see payment types below): ")
                 print_table(database_name, "payment_types")
-                payment_id = input("Enter payment id: ")
-                if payment_id == "q":
+                payment_type_id = input("Enter payment id: ")
+                if payment_type_id.lower() == "q":
                     break
-
-                # Getting payment type:
-                query = query_db(database_name, f"SELECT * FROM payment_types WHERE id = {payment_id}")
-                payment_type = PaymentType(query[0][0], query[0][1], query[0][2])
-
+                
                 print("How much of the receipt did you pay with this payment type?")
                 payment_amount = input("Enter payment amount ($): ")
-                if payment_amount == "q".lower():
+                if payment_amount.lower() == "q":
                     break
-
-                # Insert entry into ledger table:
-                ledger_entry = LedgerEntry(amount=payment_amount, receipt=receipt, payment_type=payment_type)
+                
+                ledger_entry = LedgerEntry(amount=payment_amount, receipt_id=receipt_id, payment_type_id=payment_type_id)
                 ledger_entry.insert_into_db(database_name)
 
         # Quit

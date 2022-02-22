@@ -70,7 +70,7 @@ def print_table(database_name: str, table_name: str, sql_query: str = "", cols: 
         print(mytable)
 
 
-def insert_into_table(database_name: str, table_name: str, values: list, cols: list = [] )-> None:
+def insert_into_table(database_name: str, table_name: str, values: list, cols: list = [] )-> int:
     """
     Insert a row into a table in the database.
 
@@ -79,6 +79,9 @@ def insert_into_table(database_name: str, table_name: str, values: list, cols: l
         table_name: The name of the table to insert the row into.
         values: The values to insert into the columns.
         cols: The names of the columns to insert into. Default is the empty list, which means all columns will be inserted.
+
+    Returns:
+        The id of the row inserted.
     """
     logging.basicConfig(level=logging.INFO)
     with create_connection(database_name) as c:
@@ -103,12 +106,15 @@ def insert_into_table(database_name: str, table_name: str, values: list, cols: l
                 val_str += f"'{val}', "
         val_str = val_str[:-2]
 
-        print(val_str)
         # Insert the row
         if len(col_str) == 0:
             c.execute(f"INSERT INTO {table_name} VALUES ({val_str})")
         else:
             c.execute(f"INSERT INTO {table_name} ({col_str}) VALUES ({val_str})")
+
+        # Retrieve ID of the last row inserted.
+        row_id = c.execute(f"SELECT last_insert_rowid()")
+        return row_id
 
 
 def initialize_empty_db(database_name: str):
@@ -143,7 +149,7 @@ def initialize_empty_db(database_name: str):
         # Receipts table (stores details about a single receipt eg: receipt number, amount, date)
         c.execute("""CREATE TABLE IF NOT EXISTS receipts (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            amount REAL NOT NULL,
+            total REAL NOT NULL,
             date TEXT NOT NULL CONSTRAINT valid_date CHECK(Date IS date(Date,'+0 days')),
             location TEXT NOT NULL
         )""")
@@ -182,16 +188,16 @@ def query_db(database_name: str, sql_query: str) -> list:
         return c.fetchall()
 
 
-def is_table_empty(database_name: str, table_name: str) -> bool:
-    """
-    Check if a table in the database is empty.
+# def is_table_empty(database_name: str, table_name: str) -> bool:
+#     """
+#     Check if a table in the database is empty.
 
-    Args:
-        database_name: The name of the database to query.
-        table_name: The name of the table to check.
+#     Args:
+#         database_name: The name of the database to query.
+#         table_name: The name of the table to check.
 
-    Returns:
-        True if the table is empty, False otherwise.
-    """
-    row = query_db(database_name, f"SELECT * FROM {table_name} limit 1")
-    return len(row) == 0
+#     Returns:
+#         True if the table is empty, False otherwise.
+#     """
+#     row = query_db(database_name, f"SELECT * FROM {table_name} limit 1")
+#     return len(row) == 0
