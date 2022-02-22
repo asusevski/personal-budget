@@ -36,17 +36,5 @@ class Transaction:
         Effects:
             Modifies table 'receipts', 'ledger' and 'expenses' in the database.
         """
-        try:
-            # Insert the receipt into the database:
-            self.receipt.insert_into_db(database_name)
-
-            # Insert the expenses into the database:
-            for expense in self.expenses:
-                expense.insert_into_db(database_name)
-
-            # Insert the ledger entries into the database:
-            for ledger_entry in self.ledger_entries:
-                ledger_entry.insert_into_db(database_name)
-        # NOTE: Make this more specific later
-        except Exception as e:
-            print(e)
+        return
+        #with
