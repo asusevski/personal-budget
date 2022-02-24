@@ -3,6 +3,7 @@ from expenses import Expense
 from ledger import LedgerEntry
 from receipt import Receipt
 import sqlite3
+from manage_database import create_connection
 
 
 @dataclass
@@ -55,7 +56,7 @@ class Transaction:
                 ledger_cols = ", ".join(str(i) for i in list(ledger_entry.__dict__.keys()))
                 ledger_vals = ", ".join("\'" + str(i) + "\'" for i in list(ledger_entry.__dict__.values()))
                 c.execute(f"""INSERT INTO ledger ({ledger_cols}) VALUES ({ledger_vals})""")
-                
+
             c.execute("commit")
             conn.commit()
             conn.close()
@@ -63,4 +64,40 @@ class Transaction:
             c.execute("rollback")
             conn.commit()
             conn.close()
-            raise e
+
+    def execute_new(self, database_name: str) -> None:
+        """
+        Updates the database with the information about a transaction.
+
+        Args:
+            database_name: The name of the database to insert the payment type into.
+            receipt: The receipt associated with the transaction
+            expenses: The expenses associated with the transaction
+            ledger_entries: The ledger entries associated with the transaction
+
+        Returns:
+            None
+
+        Effects:
+            Modifies table 'receipts', 'ledger' and 'expenses' in the database.
+        """
+        with create_connection(database_name) as c:
+            c.execute("begin")
+            try:
+                receipt_cols = ", ".join(str(i) for i in list(self.receipt.__dict__.keys()))
+                receipt_vals = ", ".join("\'" + str(i) + "\'" for i in list(self.receipt.__dict__.values()))
+
+                c.execute(f"""INSERT INTO receipts ({receipt_cols}) VALUES ({receipt_vals})""")
+                for expense in self.expenses:
+                    expense_cols = ", ".join(str(i) for i in list(expense.__dict__.keys()))
+                    expense_vals = ", ".join("\'" + str(i) + "\'" for i in list(expense.__dict__.values()))
+
+                    c.execute(f"""INSERT INTO expenses ({expense_cols}) VALUES ({expense_vals})""")
+                for ledger_entry in self.ledger_entries:
+                    ledger_cols = ", ".join(str(i) for i in list(ledger_entry.__dict__.keys()))
+                    ledger_vals = ", ".join("\'" + str(i) + "\'" for i in list(ledger_entry.__dict__.values()))
+                    c.execute(f"""INSERT INTO ledger ({ledger_cols}) VALUES ({ledger_vals})""")
+
+                c.execute("commit")
+            except sqlite3.OperationalError as e:
+                c.execute("rollback")
