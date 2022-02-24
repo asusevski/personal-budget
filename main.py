@@ -156,6 +156,7 @@ as \'groceries\' and the subcategory be \'chicken\', for example).")
                 
                 ledger_entry = LedgerEntry(amount=payment_amount, receipt_id=receipt_id, payment_type_id=payment_type_id)
                 ledger_entry.insert_into_db(database_name)
+                receipt_total -= float(payment_amount)
 
         # Quit
         if choice == "5":
