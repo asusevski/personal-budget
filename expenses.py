@@ -27,6 +27,6 @@ class Expense:
         Effects:
             Modifies table 'expenses' in the database.
         """
-        expense_id = insert_into_table(database_name, 'expenses', cols=['item', 'amount', 'type', 'receipt_id', 'item_category_id'], \
+        expense_id = insert_into_table(database_name, 'expenses', cols=['item', 'amount', 'type', 'receipt_id', 'category_id'], \
             values=[self.item, self.amount, self.type, self.receipt_id, self.category_id])
         return expense_id

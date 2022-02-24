@@ -21,7 +21,7 @@ class Transaction:
     expenses: list[Expense]
     ledger_entries: list[LedgerEntry]
 
-    def execute(self, database_name: str, receipt: Receipt, expenses: list[Expense], ledger_entries: list[LedgerEntry]) -> None:
+    def execute(self, database_name: str) -> None:
         """
         Updates the database with the information about a transaction.
 
@@ -42,8 +42,8 @@ class Transaction:
         c = conn.cursor()
         c.execute("begin")
         try:
-            receipt_cols = ", ".join(str(i) for i in list(receipt.__dict__.keys()))
-            receipt_vals = ", ".join(str(i) for i in list(receipt.__dict__.values()))
+            receipt_cols = ", ".join(str(i) for i in list(self.receipt.__dict__.keys()))
+            receipt_vals = ", ".join("\'" + str(i) + "\'" for i in list(self.receipt.__dict__.values()))
             # print(receipt_cols[0])
             # print(receipt_cols[-1])
             # print(receipt_vals[0])
@@ -52,13 +52,13 @@ class Transaction:
             #print(receipt_vals)
             #print(type(receipt_vals))
             c.execute(f"""INSERT INTO receipts ({receipt_cols}) VALUES ({receipt_vals})""")
-            for expense in expenses:
+            for expense in self.expenses:
                 expense_cols = ", ".join(str(i) for i in list(expense.__dict__.keys()))
-                expense_vals = ", ".join(str(i) for i in list(expense.__dict__.values()))
+                expense_vals = ", ".join("\'" + str(i) + "\'" for i in list(expense.__dict__.values()))
                 c.execute(f"""INSERT INTO expenses ({expense_cols}) VALUES ({expense_vals})""")
-            for ledger_entry in ledger_entries:
+            for ledger_entry in self.ledger_entries:
                 ledger_cols = ", ".join(str(i) for i in list(ledger_entry.__dict__.keys()))
-                ledger_vals = ", ".join(str(i) for i in list(ledger_entry.__dict__.values()))
+                ledger_vals = ", ".join("\'" + str(i) + "\'" for i in list(ledger_entry.__dict__.values()))
                 c.execute(f"""INSERT INTO ledger ({ledger_cols}) VALUES ({ledger_vals})""")
             c.execute("commit")
             conn.commit()

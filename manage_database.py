@@ -113,7 +113,8 @@ def insert_into_table(database_name: str, table_name: str, values: list, cols: l
             c.execute(f"INSERT INTO {table_name} ({col_str}) VALUES ({val_str})")
 
         # Retrieve ID of the last row inserted.
-        row_id = c.execute(f"SELECT last_insert_rowid()")
+        row_id = c.execute(f"""SELECT last_insert_rowid()""").fetchone()[0]
+        #print(row_id)
         return row_id
 
 
@@ -141,9 +142,9 @@ def initialize_empty_db(database_name: str):
             amount REAL NOT NULL,
             type TEXT NOT NULL CONSTRAINT valid_type CHECK(Type IN ('want', 'need', 'savings')),
             receipt_id INTEGER NOT NULL,
-            item_category_id INTEGER NOT NULL,
+            category_id INTEGER NOT NULL,
             FOREIGN KEY(receipt_id) REFERENCES receipts(id),
-            FOREIGN KEY (item_category_id) REFERENCES category(id)
+            FOREIGN KEY (category_id) REFERENCES category(id)
         )""")
 
         # Receipts table (stores details about a single receipt eg: receipt number, amount, date)

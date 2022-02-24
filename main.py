@@ -118,6 +118,8 @@ as \'groceries\' and the subcategory be \'chicken\', for example).")
                 expense_category_id = input(f"Enter expense category id for {expense_name}: ")
 
                 expenses.append([expense_name, expense_amount, expense_type, expense_category_id])
+                print("Expense noted.")
+                print("-" * 25)
             
             # Check that the receipt total makes sense:
             print("Total for the receipt is: ${:.2f}".format(receipt_total))
