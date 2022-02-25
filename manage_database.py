@@ -1,7 +1,9 @@
 from contextlib import contextmanager
+#from expenses import Expense
 import logging
-from prettytable import from_db_cursor
+from prettytable import PrettyTable, from_db_cursor
 import sqlite3
+from typing import Tuple
 
 
 @contextmanager
@@ -133,6 +135,7 @@ def initialize_empty_db(database_name: str):
             type TEXT NOT NULL CONSTRAINT valid_type CHECK(Type IN ('want', 'need', 'savings')),
             receipt_id INTEGER NOT NULL,
             category_id INTEGER NOT NULL,
+            details TEXT,
             FOREIGN KEY(receipt_id) REFERENCES receipts(id),
             FOREIGN KEY (category_id) REFERENCES category(id)
         )""")
@@ -177,3 +180,59 @@ def query_db(database_name: str, sql_query: str) -> list:
             return
 
         return c.fetchall()
+
+
+def search_expense(database_name: str, expense_item: str) -> Tuple[PrettyTable, list]:
+    """
+    Search for an expense in the database.
+
+    Args:
+        database_name: The name of the database to search in.
+        expense_item: The item of the expense to search for.
+
+    Returns:
+        An Expense object containing the details of the expense.
+    """
+    with create_connection(database_name) as c:
+        c.execute(f"SELECT * FROM expenses WHERE item = '{expense_item}'")
+        vals = list(c.fetchone())
+        # If there are no values, return None and empty list
+        if vals is None:
+            return None, []
+        # Else, due to the fact that the line "list(c.fetchone())" "empties" the cursor (if there is only one row), 
+        # we need to create a PrettyTable object ourselves with the values retrieved.
+        else:
+            # This line is required to get the columns of the table (even if no rows exist)
+            table = from_db_cursor(c)
+            # Clearing rows to make sure there's only one row for the expense (for simplicity and clarity of reading)
+            table.clear_rows()
+            table.add_row(vals)
+        return table, vals
+
+
+def search_category(database_name: str, category_id: int) -> Tuple[PrettyTable, list]:
+    """
+    Search for a category in the database.
+
+    Args:
+        database_name: The name of the database to search in.
+        category: The category to search for.
+
+    Returns:
+        A Category object containing the details of the category.
+    """
+    with create_connection(database_name) as c:
+        c.execute(f"SELECT * FROM categories WHERE id = {category_id}")
+        vals = list(c.fetchone())
+        # If there are no values, return None and empty list
+        if vals is None:
+            return None, []
+        # Else, due to the fact that the line "list(c.fetchone())" "empties" the cursor (if there is only one row), 
+        # we need to create a PrettyTable object ourselves with the values retrieved.
+        else:
+            # This line is required to get the columns of the table (even if no rows exist)
+            table = from_db_cursor(c)
+            # Clearing rows to make sure there's only one row for the expense (for simplicity and clarity of reading)
+            table.clear_rows()
+            table.add_row(vals)
+        return table, vals

@@ -22,8 +22,7 @@ def main():
     User can:
         - Initialize basic tables in a budget database
         - Create table in database
-        - Insert single expense into expenses table
-        - Insert receipt of expenses into expenses table
+        - Insert expenses into expenses table
 
     """
     while True:
@@ -32,8 +31,7 @@ def main():
         1. Initialize budget database
         2. Insert rows into any table
         3. Insert expenses into expenses table
-        4. Insert a receipt of expenses into expenses table
-        5. Exit
+        4. Exit
 
         """)
         choice = input("Enter your choice: ")
@@ -182,7 +180,7 @@ def main():
                 receipt_total -= float(payment_amount)
 
         # Quit
-        if choice == "5":
+        if choice == "4":
             sys.exit()
 
 
