@@ -4,7 +4,19 @@ from manage_database import insert_into_table
 
 @dataclass
 class PaymentType:
-    #id: int
+    """
+    This class stores Payment Types. A PaymentType object will contain a name and a description.
+
+    eg: name = 'VisaXXXX' and Description = "TD Credit Card"
+    
+    Attributes:
+        name: The name of the payment type (eg 'Mastercard')
+        description: A description of the expense (eg 'Costco Credit Card')
+
+    Methods:
+        insert_into_db(self, database_name): Insert the payment type into the database.
+
+    """
     name: str
     description: str
 
@@ -24,4 +36,3 @@ class PaymentType:
         payment_type_id = insert_into_table(database_name, 'payment_types', cols=['name', 'description'],\
                                             values=[self.name, self.description])
         return payment_type_id
-

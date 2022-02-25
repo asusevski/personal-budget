@@ -92,19 +92,10 @@ def insert_into_table(database_name: str, table_name: str, values: list, cols: l
             return
 
         # Create the string of column names
-        col_str = ""
-        for col in cols:
-            col_str += f"{col}, "
-        col_str = col_str[:-2]
-
+        col_str = ", ".join(str(i) for i in cols)
+        
         # Create the string of values
-        val_str = ""
-        for val in values:
-            if val == "":
-                val_str += f"NULL, "
-            else:
-                val_str += f"'{val}', "
-        val_str = val_str[:-2]
+        val_str = ", ".join("\'" + str(i) + "\'" for i in values)
 
         # Insert the row
         if len(col_str) == 0:
@@ -114,7 +105,6 @@ def insert_into_table(database_name: str, table_name: str, values: list, cols: l
 
         # Retrieve ID of the last row inserted.
         row_id = c.execute(f"""SELECT last_insert_rowid()""").fetchone()[0]
-        #print(row_id)
         return row_id
 
 
@@ -187,18 +177,3 @@ def query_db(database_name: str, sql_query: str) -> list:
             return
 
         return c.fetchall()
-
-
-# def is_table_empty(database_name: str, table_name: str) -> bool:
-#     """
-#     Check if a table in the database is empty.
-
-#     Args:
-#         database_name: The name of the database to query.
-#         table_name: The name of the table to check.
-
-#     Returns:
-#         True if the table is empty, False otherwise.
-#     """
-#     row = query_db(database_name, f"SELECT * FROM {table_name} limit 1")
-#     return len(row) == 0

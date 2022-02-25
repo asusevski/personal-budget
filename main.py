@@ -1,14 +1,17 @@
 from expense_category import ExpenseCategory
 from expenses import Expense
+from interface import find_db
 from manage_database import initialize_empty_db
-# from manage_database import insert_obj_into_db
-# from manage_database import is_table_empty
 from manage_database import print_table
-from manage_database import query_db
+#from manage_database import query_db
 from ledger import LedgerEntry
 from payment_type import PaymentType
 from receipt import Receipt
 import sys
+
+
+# Constants
+HST_TAX_RATE = 0.13
 
 
 def main():
@@ -51,34 +54,31 @@ def main():
 
             # Enter payment types:
             print("Initializing payment types...")
-            #payment_id = 1
             while True:
                 payment_name = input("Enter payment name (eg: VisaXXXX, Cash, Checking, Bitcoin, etc..) or q to exit: ")
                 if payment_name == "" or payment_name.lower() == "q":
                     break
                 payment_description = input("Enter payment description (can be left blank): ")
-                #payment_type = PaymentType(payment_id, payment_name, payment_description)
                 payment_type = PaymentType(payment_name, payment_description)
                 payment_type.insert_into_db(database_name)
-                #payment_id += 1
 
-            # Enter expense categories:
-            # I know this looks stupid ignore for now
-            print("Initializing expense categories...\nEach category entry will have a category and subcategory.\nThe \
-category will be a broad categorization and the subcategory, an optional field, will be used to make \
-the category more clear (particularly useful for groceries -- one may want to have the category be listed \
-as \'groceries\' and the subcategory be \'chicken\', for example).")
 
-            #category_id = 1
+            print("""Initializing expense categories...
+            
+            Each category entry will have a category and subcategory.
+            The category will be a broad categorization and the subcategory, an optional field, 
+            will be used to make the category more clear (particularly useful for groceries -- one may 
+            want to have the category be listed as \'groceries\' and the subcategory be \'chicken\', for example).
+            
+            """)
+
             while True:
                 category_name = input("Enter category name (eg: grocery, bills, etc...) or q to exit: ")
                 if category_name == "" or category_name == "q":
                     break
                 subcategory = input("Enter subcategory (can be left blank): ")
-                #expense_category = ExpenseCategory(category_id, category_name, subcategory)
                 expense_category = ExpenseCategory(category_name, subcategory)
                 expense_category.insert_into_db(database_name)
-                #category_id += 1
 
         if choice == "2":
             print("try later.")
@@ -88,9 +88,10 @@ as \'groceries\' and the subcategory be \'chicken\', for example).")
 
         # Enter a receipt of expenses
         if choice == "4":
-            database_name = input("Enter database name: ")
-            if database_name[-3:] != ".db" or ".sqlite" not in database_name:
-                database_name += ".db"
+            database_name = find_db()
+            if not database_name:
+                print("No database found. Please intialize a database first.")
+                continue
 
             # Get receipt date:
             receipt_date = input("Enter receipt date (YYYY-MM-DD): ")
@@ -109,6 +110,23 @@ as \'groceries\' and the subcategory be \'chicken\', for example).")
                 if expense_name == "" or expense_name.lower() == "q":
                     break
                 expense_amount = input("Enter expense amount ($): ")
+
+                # Check if expense has a discount to apply
+                discount = input("Enter any discount amount as a % (or enter to continue with no discount): ")
+                if discount != "":
+                    discount = float(discount)
+                    expense_amount = expense_amount * (1 - (discount/100))
+                # Check if expense is taxable:
+                taxable = input("Is this expense taxable? (y/n): ")
+                if taxable:
+                    tax_rate = input("Default tax rate is 13%, enter a different rate (as a %) if desired or enter to continue with 13%: ")
+                    if tax_rate == "":
+                        tax_rate = HST_TAX_RATE
+                    # NOTE: this is not robust to weird input at all, fix!
+                    else:
+                        tax_rate = float(tax_rate)
+                    expense_amount = float(expense_amount) * (1 + tax_rate)
+                
 
                 receipt_total += float(expense_amount)
 
@@ -131,6 +149,9 @@ as \'groceries\' and the subcategory be \'chicken\', for example).")
 
             # Inserting receipt into receipts table and have the method return the autoincrement ID
             receipt_id = receipt.insert_into_db(database_name)
+            #NOTE!!!!!!: can ONLY get receipt id by runnning receipt.insert_into_db(database_name), 
+            # so how can I initialize a transaction object and also run receipt_id?
+            # expenses = []
             for expense in expenses:
                 expense_name = expense[0]
                 expense_amount = expense[1]
@@ -143,11 +164,10 @@ as \'groceries\' and the subcategory be \'chicken\', for example).")
             print("How did you pay?")
             tol = 10e-4
             while abs(receipt_total) >= tol:
-                #print("Enter q to exit at any time.")
                 print("Remaining on receipt: ${:.2f}".format(receipt_total))
                 print("Select payment id used to pay (see payment types below): ")
                 print_table(database_name, "payment_types")
-                payment_type_id = input("Enter payment id: ")
+                payment_type_id = input("Enter payment id (or q to exit): ")
                 if payment_type_id.lower() == "q":
                     break
                 

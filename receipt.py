@@ -4,7 +4,18 @@ from manage_database import insert_into_table
 
 @dataclass
 class Receipt:
-    # id: int
+    """
+    This class stores the details about a receipt.
+    
+    Attributes:
+        total: The total price of the receipt.
+        date: The date of the receipt (YYYY-MM-DD)
+        location: The location of the receipt (eg: 'Costco')
+
+    Methods:
+        insert_into_db(self, database_name): Insert the receipt into the database.
+        
+    """
     total: float
     date: str
     location: str
@@ -25,5 +36,3 @@ class Receipt:
         receipt_id = insert_into_table(database_name, 'receipts', cols=['total', 'date', 'location'], \
                           values=[self.total, self.date, self.location])
         return receipt_id
-
-

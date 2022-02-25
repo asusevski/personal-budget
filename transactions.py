@@ -17,6 +17,11 @@ class Transaction:
     The significance of a transaction being comprised of one or more ledger entries reflects that 
     one receipt can be paid across multiple payment sources (imagine a grocery bill being paid
     across multiple credit cards and/or gift cards).
+
+    Attributes:
+        receipt: The receipt associated with the transaction
+        expenses: The expenses associated with the transaction (all linked to the same receipt)
+        ledger_entries: The ledger entries associated with the transaction (all linked to the same receipt)
     """
     receipt: Receipt
     expenses: list[Expense]
@@ -58,3 +63,4 @@ class Transaction:
                 c.execute("commit")
             except sqlite3.OperationalError as e:
                 c.execute("rollback")
+                
