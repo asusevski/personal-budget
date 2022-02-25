@@ -15,7 +15,7 @@ class Expense:
         type: The type of the expense (eg: 'want', 'need', 'savings')
         receipt_id: The id of the receipt associated with the expense assigned by the database.
         category_id: The id of the expense category associated with the expense assigned by the database.
-
+        
     Methods:
         insert_into_db(self, database_name): Insert the expense into the database.
         

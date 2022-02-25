@@ -8,6 +8,7 @@ from ledger import LedgerEntry
 from payment_type import PaymentType
 from receipt import Receipt
 import sys
+from transactions import Transaction
 
 
 # Constants
