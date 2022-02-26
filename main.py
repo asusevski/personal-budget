@@ -1,18 +1,15 @@
 from expense_category import ExpenseCategory
-from expenses import Expense
+#from expenses import Expense
 from interface import find_db
+from interface import read_transaction_from_user
 from manage_database import initialize_empty_db
-from manage_database import print_table
+#from manage_database import print_table
 #from manage_database import query_db
-from ledger import LedgerEntry
+#from ledger import LedgerEntry
 from payment_type import PaymentType
-from receipt import Receipt
+#from receipt import Receipt
 import sys
-from transactions import Transaction
-
-
-# Constants
-HST_TAX_RATE = 0.13
+#from transactions import Transaction
 
 
 def main():
@@ -29,9 +26,8 @@ def main():
         print("""
 
         1. Initialize budget database
-        2. Insert rows into any table
-        3. Insert expenses into expenses table
-        4. Exit
+        2. Insert expenses into expenses table
+        3. Exit
 
         """)
         choice = input("Enter your choice: ")
@@ -80,107 +76,24 @@ def main():
                 expense_category.insert_into_db(database_name)
 
         if choice == "2":
-            print("try later.")
-
-        if choice == "3":
-            print("try later.")
-
-        # Enter a receipt of expenses
-        if choice == "4":
             database_name = find_db()
             if not database_name:
                 print("No database found. Please intialize a database first.")
                 continue
 
-            # Get receipt date:
-            receipt_date = input("Enter receipt date (YYYY-MM-DD): ")
-
-            # Get receipt location:
-            receipt_location = input("Enter receipt location: ")
-
-            # Get expenses from receipt:
-            print("Now enter each item on the receipt...")
-
-            # We'll get the recept total by adding up the price for each expense
-            receipt_total = 0
-            expenses = []
+            print("Enter q at any time to stop entering transactions.")
             while True:
-                expense_name = input("Enter expense name (or q to exit): ")
-                if expense_name == "" or expense_name.lower() == "q":
-                    break
-                expense_amount = input("Enter expense amount ($): ")
-
-                # Check if expense has a discount to apply
-                discount = input("Enter any discount amount as a % (or enter to continue with no discount): ")
-                if discount != "":
-                    discount = float(discount)
-                    expense_amount = expense_amount * (1 - (discount/100))
-                # Check if expense is taxable:
-                taxable = input("Is this expense taxable? (y/n): ")
-                if taxable:
-                    tax_rate = input("Default tax rate is 13%, enter a different rate (as a %) if desired or enter to continue with 13%: ")
-                    if tax_rate == "":
-                        tax_rate = HST_TAX_RATE
-                    # NOTE: this is not robust to weird input at all, fix!
-                    else:
-                        tax_rate = float(tax_rate)
-                    expense_amount = float(expense_amount) * (1 + tax_rate)
+                transaction = read_transaction_from_user(database_name)
+                if not transaction:
+                    print("Transaction cancelled.")
+                    continue
                 
-
-                receipt_total += float(expense_amount)
-
-                expense_type = input("Enter type of expense (want, need, or savings): ")
-                print(f"Select expense category id for {expense_name} (see categories below): ")
-                print_table(database_name, "categories")
-                expense_category_id = input(f"Enter expense category id for {expense_name}: ")
-
-                expenses.append([expense_name, expense_amount, expense_type, expense_category_id])
-                print("Expense noted.")
-                print("-" * 25)
-            
-            # Check that the receipt total makes sense:
-            print("Total for the receipt is: ${:.2f}".format(receipt_total))
-            cmd = input("Enter any button to confirm or q to cancel: ")
-            if cmd.lower() == "q":
-                break
-
-            receipt = Receipt(total="{:.2f}".format(receipt_total), date=receipt_date, location=receipt_location)
-
-            # Inserting receipt into receipts table and have the method return the autoincrement ID
-            receipt_id = receipt.insert_into_db(database_name)
-            #NOTE!!!!!!: can ONLY get receipt id by runnning receipt.insert_into_db(database_name), 
-            # so how can I initialize a transaction object and also run receipt_id?
-            # expenses = []
-            for expense in expenses:
-                expense_name = expense[0]
-                expense_amount = expense[1]
-                expense_type = expense[2]
-                expense_category_id = expense[3]
-                expense = Expense(item=expense_name, amount=expense_amount, type=expense_type,\
-                    receipt_id=receipt_id, category_id=expense_category_id)
-                expense.insert_into_db(database_name)
-
-            print("How did you pay?")
-            tol = 10e-4
-            while abs(receipt_total) >= tol:
-                print("Remaining on receipt: ${:.2f}".format(receipt_total))
-                print("Select payment id used to pay (see payment types below): ")
-                print_table(database_name, "payment_types")
-                payment_type_id = input("Enter payment id (or q to exit): ")
-                if payment_type_id.lower() == "q":
-                    break
-                
-                print("How much of the receipt did you pay with this payment type?")
-                payment_amount = input("Enter payment amount ($): ")
-                if payment_amount.lower() == "q":
-                    break
-                
-                ledger_entry = LedgerEntry(amount=payment_amount, receipt_id=receipt_id, payment_type_id=payment_type_id)
-                ledger_entry.insert_into_db(database_name)
-                receipt_total -= float(payment_amount)
+                # Insert transaction into database
+                transaction.execute(database_name)
+                print("Transaction added.")
 
         # Quit
-        if choice == "4":
+        if choice == "3":
             sys.exit()
 
 

@@ -59,143 +59,6 @@ def read_payment_type_from_user() -> PaymentType:
     return payment_type
 
 
-# def read_transaction_from_user(database_name: str) -> Transaction:
-#     """
-#     Reads a transaction from the user.
-
-#     Arguments:
-#         database_name: The name of the database to use.
-
-#     Returns:
-#         A Transaction object or None if the user ends input early with 'q' input.
-
-#     """
-#     print("Enter q at any time to cancel and exit.")
-
-#     # Get receipt date:
-#     receipt_date = input("Enter date of expense or expenses (YYYY-MM-DD): ")
-#     if receipt_date.lower() == "q":
-#         return None
-
-#     # Get receipt location:
-#     receipt_location = input("Enter location of expense(s): ")
-#     if receipt_location.lower() == "q":
-#         return None
-
-#     # We'll get the recept total by adding up the price for each expense
-#     print("Entering expenses one by one...")
-#     receipt_total = 0
-#     expenses = []
-#     while True:
-#         expense_name = input("Enter expense name (enter nothing or \"done\" if done entering expenses): ")
-#         if expense_name.lower() == "q":
-#             return None
-#         if expense_name == "" or expense_name == "done":
-#             break
-
-#         # Search to see if this expense has been entered before. If it has, ask for confirmation from user to reuse values.
-#         expense_table, existing_expense = search_expense(database_name, expense_name)
-#         if existing_expense:
-#             print("Is this the same expense we are entering?")
-#             print("Existing expense: ")
-#             print(expense_table)
-#             existing_expense_category = existing_expense[-1]
-#             category_table, _ = search_category(database_name, existing_expense_category)
-#             print("Existing expense category: ")
-#             print(category_table)
-#             same_expense = input("Same expense? (y/n): ")
-#             if same_expense.lower() == "y":
-#                 expense_name = existing_expense[1]
-#                 expense_amount = existing_expense[2]
-#                 expense_type
-#                 expense_category = existing_expense_category
-#                 expense_price = existing_expense[1]
-
-
-#             if same_expense == "y":
-#                 expense.append(existing_expense)
-#         expense_amount = input("Enter expense amount ($): ")
-#         if expense_amount.lower() == "q":
-#             return None
-
-#         # Check if expense has a discount to apply
-#         discount = input("Enter any discount amount as a % (or enter to continue with no discount): ")
-#         if discount.lower() == "q":
-#             return None
-#         if discount != "":
-#             discount = float(discount)
-#             expense_amount = expense_amount * (1 - (discount/100))
-#         # Check if expense is taxable:
-#         taxable = input("Is this expense taxable? (y/n): ")
-#         if taxable.lower() == "q":
-#             return None
-#         if taxable:
-#             tax_rate = input("Default tax rate is 13%, enter a different rate (as a %) if desired or enter to continue with 13%: ")
-#             if tax_rate.lower() == "q":
-#                 return None
-#             if tax_rate == "":
-#                 tax_rate = HST_TAX_RATE
-#             # NOTE: this is not robust to weird input at all, fix!
-#             else:
-#                 tax_rate = float(tax_rate)
-#             expense_amount = float(expense_amount) * (1 + tax_rate)
-        
-
-#         receipt_total += float(expense_amount)
-
-#         expense_type = input("Enter type of expense (want, need, or savings): ")
-#         if expense_type.lower() == "q":
-#             return None
-#         print(f"Select expense category id for {expense_name} (see categories below): ")
-#         print_table(database_name, "categories")
-#         expense_category_id = input(f"Enter expense category id for {expense_name}: ")
-
-#         expenses.append([expense_name, expense_amount, expense_type, expense_category_id])
-#         print("Expense noted.")
-#         print("-" * 25)
-    
-#     # Check that the receipt total makes sense:
-#     print("Total for the receipt is: ${:.2f}".format(receipt_total))
-#     cmd = input("Enter any button to confirm or q to cancel: ")
-#     if cmd.lower() == "q":
-#         return None
-
-#     receipt = Receipt(total="{:.2f}".format(receipt_total), date=receipt_date, location=receipt_location)
-
-#     # Inserting receipt into receipts table and have the method return the autoincrement ID
-#     receipt_id = receipt.insert_into_db(database_name)
-#     #NOTE!!!!!!: can ONLY get receipt id by runnning receipt.insert_into_db(database_name), 
-#     # so how can I initialize a transaction object and also run receipt_id?
-#     # expenses = []
-#     for expense in expenses:
-#         expense_name = expense[0]
-#         expense_amount = expense[1]
-#         expense_type = expense[2]
-#         expense_category_id = expense[3]
-#         expense = Expense(item=expense_name, amount=expense_amount, type=expense_type,\
-#             receipt_id=receipt_id, category_id=expense_category_id)
-#         expense.insert_into_db(database_name)
-
-#     print("How did you pay?")
-#     tol = 10e-4
-#     while abs(receipt_total) >= tol:
-#         print("Remaining on receipt: ${:.2f}".format(receipt_total))
-#         print("Select payment id used to pay (see payment types below): ")
-#         print_table(database_name, "payment_types")
-#         payment_type_id = input("Enter payment id (or q to exit): ")
-#         if payment_type_id.lower() == "q":
-#             break
-        
-#         print("How much of the receipt did you pay with this payment type?")
-#         payment_amount = input("Enter payment amount ($): ")
-#         if payment_amount.lower() == "q":
-#             break
-        
-#         ledger_entry = LedgerEntry(amount=payment_amount, receipt_id=receipt_id, payment_type_id=payment_type_id)
-#         ledger_entry.insert_into_db(database_name)
-#         receipt_total -= float(payment_amount)
-
-
 def read_user_receipt() -> list:
     """
     Reads all data required from user to initialize a receipt object.
@@ -353,8 +216,29 @@ def read_user_expenses(database_name: str) -> list:
     return expenses
 
 
+def read_user_ledger_entries(database_name: str, receipt_total: float) -> list:
+    print("How did you pay?")
+    tol = 10e-4
+    ledger_entries = []
+    while abs(receipt_total) >= tol:
+        print("Remaining on receipt: ${:.2f}".format(receipt_total))
+        print("Select payment id used to pay (see payment types below): ")
+        print_table(database_name, "payment_types")
+        payment_type_id = input("Enter payment id: ")
+        if payment_type_id.lower() == "q":
+            return None
+        
+        print("How much of the receipt did you pay with this payment type?")
+        payment_amount = input("Enter payment amount ($): ")
+        if payment_amount.lower() == "q":
+            return None
+        
+        ledger_entries.append(payment_amount, payment_type_id)
+    return ledger_entries
+
+
 def read_transaction_from_user(database_name: str) -> Transaction:
-     """
+    """
     Reads a transaction from the user.
 
     Arguments:
@@ -363,10 +247,47 @@ def read_transaction_from_user(database_name: str) -> Transaction:
     Returns:
         A Transaction object or None if the user ends input early with 'q' input.
 
-     """
-     print("Enter q at any time to cancel and exit.")
+    """
+    receipt_user_data = read_user_receipt()
+    if not receipt_user_data:
+        return None
 
-     receipt_user_data = read_user_receipt()
-     if not receipt_user_data:
-         return None
+    expense_user_data = read_user_expenses(database_name)
+    if not expense_user_data:
+        return None
+
+    # Calculate receipt total:
+    receipt_total = 0
+    for expense in expense_user_data:
+        amount = float(expense[1])
+        receipt_total += amount
     
+    ledger_entries_user_data = read_user_ledger_entries(database_name, receipt_total)
+    if not ledger_entries_user_data:
+        return None
+    
+    receipt_date = receipt_user_data[0]
+    receipt_location = receipt_user_data[1]
+
+    receipt = Receipt(total="{:.2f}".format(receipt_total), date=receipt_date, location=receipt_location)
+
+    expenses = []
+    for expense in expense_user_data:
+        expense_name = expense[0]
+        expense_amount = expense[1]
+        expense_type = expense[2]
+        expense_details = expense[3]
+        expense_category = expense[4]
+        expense = Expense(item=expense_name, amount=expense_amount, type=expense_type,\
+                          details=expense_details, receipt=receipt, category_id=expense_category)
+        expenses.append(expense)
+    
+    ledger_entries = []
+    for ledger_entry in ledger_entries_user_data:
+        payment_amount = ledger_entry[0]
+        payment_type_id = ledger_entry[1]
+        ledger_entry = LedgerEntry(amount=payment_amount, receipt=receipt, payment_type_id=payment_type_id)
+        ledger_entries.append(ledger_entry)
+
+    transaction = Transaction(receipt=receipt, expenses=expenses, ledger_entries=ledger_entries)
+    return transaction
