@@ -99,7 +99,7 @@ def apply_discount_and_tax(expense_amount: str) -> str:
     taxable = input("Is this expense taxable? (y/n): ")
     if taxable.lower() == "q":
         return None
-    if taxable:
+    if taxable.lower() == "y":
         tax_rate = input("Default tax rate is 13%, enter a different rate (as a %) if desired or enter to continue with 13%: ")
         if tax_rate.lower() == "q":
             return None
@@ -132,16 +132,6 @@ def read_user_expenses(database_name: str) -> list:
         Or None if the user quits early.
 
     """
-    # Get expense name:
-    expense_name = input("Enter expense name: ")
-    if expense_name.lower() == "q":
-        return None
-
-    # Get expense amount:
-    expense_amount = input("Enter expense amount ($): ")
-    if expense_amount.lower() == "q":
-        return None
-
     expenses = []
     while True:
         expense_name = input("Enter expense name (enter nothing or \"done\" if done entering expenses): ")
@@ -198,6 +188,8 @@ def read_user_expenses(database_name: str) -> list:
                 return None
 
             expense_amount = apply_discount_and_tax(expense_amount)
+            if not expense_amount:
+                return None
 
             expense_type = input("Enter type of expense (want, need, or savings): ")
             if expense_type.lower() == "q":
@@ -233,7 +225,8 @@ def read_user_ledger_entries(database_name: str, receipt_total: float) -> list:
         if payment_amount.lower() == "q":
             return None
         
-        ledger_entries.append(payment_amount, payment_type_id)
+        ledger_entries.append([payment_amount, payment_type_id])
+        receipt_total -= float(payment_amount)
     return ledger_entries
 
 

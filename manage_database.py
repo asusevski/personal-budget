@@ -195,18 +195,20 @@ def search_expense(database_name: str, expense_item: str) -> Tuple[PrettyTable, 
     """
     with create_connection(database_name) as c:
         c.execute(f"SELECT * FROM expenses WHERE item = '{expense_item}'")
-        vals = list(c.fetchone())
-        # If there are no values, return None and empty list
-        if vals is None:
+        vals = c.fetchone()
+        if not vals:
             return None, []
+        vals = list(vals)
+        # If there are no values, return None and empty list
+        #if vals is None:
+        #    return None, []
         # Else, due to the fact that the line "list(c.fetchone())" "empties" the cursor (if there is only one row), 
         # we need to create a PrettyTable object ourselves with the values retrieved.
-        else:
-            # This line is required to get the columns of the table (even if no rows exist)
-            table = from_db_cursor(c)
-            # Clearing rows to make sure there's only one row for the expense (for simplicity and clarity of reading)
-            table.clear_rows()
-            table.add_row(vals)
+        # This line is required to get the columns of the table (even if no rows exist)
+        table = from_db_cursor(c)
+        # Clearing rows to make sure there's only one row for the expense (for simplicity and clarity of reading)
+        table.clear_rows()
+        table.add_row(vals)
         return table, vals
 
 
@@ -223,16 +225,16 @@ def search_category(database_name: str, category_id: int) -> Tuple[PrettyTable, 
     """
     with create_connection(database_name) as c:
         c.execute(f"SELECT * FROM categories WHERE id = {category_id}")
-        vals = list(c.fetchone())
         # If there are no values, return None and empty list
-        if vals is None:
+        vals = c.fetchone()
+        if not vals:
             return None, []
+        vals = list(vals)
         # Else, due to the fact that the line "list(c.fetchone())" "empties" the cursor (if there is only one row), 
         # we need to create a PrettyTable object ourselves with the values retrieved.
-        else:
-            # This line is required to get the columns of the table (even if no rows exist)
-            table = from_db_cursor(c)
-            # Clearing rows to make sure there's only one row for the expense (for simplicity and clarity of reading)
-            table.clear_rows()
-            table.add_row(vals)
+        # This line is required to get the columns of the table (even if no rows exist)
+        table = from_db_cursor(c)
+        # Clearing rows to make sure there's only one row for the expense (for simplicity and clarity of reading)
+        table.clear_rows()
+        table.add_row(vals)
         return table, vals

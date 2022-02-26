@@ -86,11 +86,11 @@ def main():
                 transaction = read_transaction_from_user(database_name)
                 if not transaction:
                     print("Transaction cancelled.")
-                    continue
-                
-                # Insert transaction into database
-                transaction.execute(database_name)
-                print("Transaction added.")
+                    break
+                else:
+                    # Insert transaction into database
+                    transaction.execute(database_name)
+                    print("Transaction added.")
 
         # Quit
         if choice == "3":
