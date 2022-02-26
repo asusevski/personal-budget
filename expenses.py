@@ -13,6 +13,7 @@ class Expense:
         item: The name of the expense
         amount: The price of the expense
         type: The type of the expense (eg: 'want', 'need', 'savings')
+        details: Any additional details about the expense
         receipt_id: The id of the receipt associated with the expense assigned by the database.
         category_id: The id of the expense category associated with the expense assigned by the database.
         
@@ -23,4 +24,3 @@ class Expense:
     details: str
     receipt: Receipt
     category_id: int
-    
