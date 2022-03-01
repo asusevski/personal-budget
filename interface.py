@@ -107,7 +107,7 @@ def apply_discount_and_tax(expense_amount: str) -> str:
             tax_rate = HST_TAX_RATE
         # NOTE: this is not robust to weird input at all, fix!
         else:
-            tax_rate = float(tax_rate)
+            tax_rate = float(tax_rate) / 100
         expense_amount = float(expense_amount) * (1 + tax_rate)
     # format expense amount to 2 decimal places and return
     return "{:.2f}".format(expense_amount)
