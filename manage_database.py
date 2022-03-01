@@ -160,6 +160,35 @@ def initialize_empty_db(database_name: str):
             FOREIGN KEY (payment_type_id) REFERENCES payment_types(id)
         )""")
 
+        # Income table (stores details about income eg: income from a job, etc...)
+        c.execute("""CREATE TABLE IF NOT EXISTS income (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            amount REAL NOT NULL,
+            paystub_id INTEGER NOT NULL,
+            details TEXT,
+            FOREIGN KEY (paystub_id) REFERENCES paystubs(id)
+        )""")
+
+        # Paystubs table (stores date, source, and receiving payment type of pay 
+        # eg: paid $1000 on July 1st to chequing account)
+        c.execute("""CREATE TABLE IF NOT EXISTS paystubs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            date TEXT NOT NULL CONSTRAINT valid_date CHECK(Date IS date(Date,'+0 days')),
+            payer TEXT NOT NULL
+            payment_type_id INTEGER NOT NULL,
+            FOREIGN KEY (payment_type_id) REFERENCES payment_types(id)
+        )""")
+
+        # paystubs_ledger table (stores pretty much the same thing as the ledger table, but for paystubs)
+        c.execute("""CREATE TABLE IF NOT EXISTS paystubs_ledger (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            amount REAL NOT NULL,
+            paystub_id INTEGER NOT NULL,
+            payment_type_id INTEGER NOT NULL,
+            FOREIGN KEY (paystub_id) REFERENCES paystubs(id),
+            FOREIGN KEY (payment_type_id) REFERENCES payment_types(id)
+        )""")
+
 
 def query_db(database_name: str, sql_query: str) -> list:
     """
