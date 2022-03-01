@@ -175,11 +175,11 @@ def read_user_expenses(database_name: str) -> list:
                 else:
                     expense_type = existing_expense[3]
 
-                expense_category = existing_expense_category
+                expense_category_id = existing_expense_category
                 expense_details = input("Enter any details about the expense (or enter to continue with no details): ")
                 if expense_details.lower() == "q":
                     return None
-                expenses.append([expense_name, expense_amount, expense_type, expense_details, expense_category])
+                expenses.append([expense_name, expense_amount, expense_type, expense_details, expense_category_id])
 
         # If there are no existing expenses or the expense is not the same as the existing expense, ask for expense details.
         else:
@@ -201,10 +201,15 @@ def read_user_expenses(database_name: str) -> list:
 
             print(f"Select expense category id for {expense_name} (see categories below): ")
             print_table(database_name, "categories")
-            expense_category = input(f"Enter expense category id for {expense_name}: ")
-            if expense_category.lower() == "q":
+            expense_category_id = input(f"Enter expense category id for {expense_name} or enter \"add\" to add a new expense category for this expense: ")
+            if expense_category_id.lower() == "q":
                 return None
-            expenses.append([expense_name, expense_amount, expense_type, expense_details, expense_category])
+            if expense_category_id.lower() == "add":
+                expense_category_name = input("Enter new expense category name: ")
+                expense_subcategory = input("Enter expense subcategory name (or enter to continue with no subcategory): ")
+                expense_cat = ExpenseCategory(expense_category_name, expense_subcategory)
+                expense_category_id = expense_cat.insert_into_db(database_name)
+            expenses.append([expense_name, expense_amount, expense_type, expense_details, expense_category_id])
     return expenses
 
 
@@ -216,9 +221,14 @@ def read_user_ledger_entries(database_name: str, receipt_total: float) -> list:
         print("Remaining on receipt: ${:.2f}".format(receipt_total))
         print("Select payment id used to pay (see payment types below): ")
         print_table(database_name, "payment_types")
-        payment_type_id = input("Enter payment id: ")
+        payment_type_id = input("Enter payment id or enter \"add\" to add a new payment type: ")
         if payment_type_id.lower() == "q":
             return None
+        if payment_type_id.lower() == "add":
+            payment_type_name = input("Enter new payment type name: ")
+            payment_type_description = input("Enter payment type description (or enter to continue with no description): ")
+            payment_type = PaymentType(payment_type_name, payment_type_description)
+            payment_type_id = payment_type.insert_into_db(database_name)
         
         print("How much of the receipt did you pay with this payment type?")
         payment_amount = input("Enter payment amount ($): ")

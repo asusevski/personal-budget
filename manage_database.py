@@ -174,7 +174,7 @@ def initialize_empty_db(database_name: str):
         c.execute("""CREATE TABLE IF NOT EXISTS paystubs (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             date TEXT NOT NULL CONSTRAINT valid_date CHECK(Date IS date(Date,'+0 days')),
-            payer TEXT NOT NULL
+            payer TEXT NOT NULL,
             payment_type_id INTEGER NOT NULL,
             FOREIGN KEY (payment_type_id) REFERENCES payment_types(id)
         )""")
