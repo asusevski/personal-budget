@@ -1,5 +1,4 @@
 from contextlib import contextmanager
-#from expenses import Expense
 import logging
 from prettytable import PrettyTable, from_db_cursor
 import sqlite3
@@ -161,7 +160,7 @@ def initialize_empty_db(database_name: str):
         )""")
 
         # Income table (stores details about income eg: income from a job, etc...)
-        c.execute("""CREATE TABLE IF NOT EXISTS income (
+        c.execute("""CREATE TABLE IF NOT EXISTS incomes (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             amount REAL NOT NULL,
             paystub_id INTEGER NOT NULL,
@@ -173,14 +172,13 @@ def initialize_empty_db(database_name: str):
         # eg: paid $1000 on July 1st to chequing account)
         c.execute("""CREATE TABLE IF NOT EXISTS paystubs (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
+            total REAL NOT NULL,
             date TEXT NOT NULL CONSTRAINT valid_date CHECK(Date IS date(Date,'+0 days')),
-            payer TEXT NOT NULL,
-            payment_type_id INTEGER NOT NULL,
-            FOREIGN KEY (payment_type_id) REFERENCES payment_types(id)
+            payer TEXT NOT NULL
         )""")
 
         # paystubs_ledger table (stores pretty much the same thing as the ledger table, but for paystubs)
-        c.execute("""CREATE TABLE IF NOT EXISTS paystubs_ledger (
+        c.execute("""CREATE TABLE IF NOT EXISTS paystub_ledger (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             amount REAL NOT NULL,
             paystub_id INTEGER NOT NULL,

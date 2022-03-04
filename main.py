@@ -1,15 +1,7 @@
-from expense_category import ExpenseCategory
-#from expenses import Expense
-from interface import find_db
-from interface import read_transaction_from_user
+from categories import ExpenseCategory, PaymentType
+from interface import find_db, read_transaction_from_user
 from manage_database import initialize_empty_db
-#from manage_database import print_table
-#from manage_database import query_db
-#from ledger import LedgerEntry
-from payment_type import PaymentType
-#from receipt import Receipt
 import sys
-#from transactions import Transaction
 
 
 def main():
@@ -27,7 +19,8 @@ def main():
 
         1. Initialize budget database
         2. Insert expenses into expenses table
-        3. Exit
+        3. Insert incomes in incomes table
+        4. Exit
 
         """)
         choice = input("Enter your choice: ")
@@ -92,8 +85,11 @@ def main():
                     transaction.execute(database_name)
                     print("Transaction added.")
 
-        # Quit
         if choice == "3":
+            pass
+        
+        # Quit
+        if choice == "4":
             sys.exit()
 
 

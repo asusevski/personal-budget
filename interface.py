@@ -1,13 +1,9 @@
-from expense_category import ExpenseCategory
-from expenses import Expense
-from ledger import LedgerEntry
-from manage_database import print_table
-from manage_database import search_category
-from manage_database import search_expense
+from categories import ExpenseCategory, PaymentType
+from expenses import Expense, LedgerEntry, Receipt
+from incomes import Income, Paystub, PaystubLedger
+from manage_database import print_table, search_category, search_expense
 import os
 import re
-from payment_type import PaymentType
-from receipt import Receipt
 from transactions import Transaction
 
 
