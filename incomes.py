@@ -10,7 +10,7 @@ class Paystub:
     Attributes:
         total: The total income of the paystub.
         date: The date of the receipt (YYYY-MM-DD)
-        location: The location of the receipt (eg: 'Costco')
+        payer: The source of the paystub (eg: 'work')
 
     Methods:
         insert_into_db(self, database_name): Insert the receipt into the database.

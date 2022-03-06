@@ -59,9 +59,6 @@ def read_user_receipt() -> list:
     """
     Reads all data required from user to initialize a receipt object.
 
-    Arguments:
-        database_name: The name of the database to use.
-
     Returns:
         Either a list of the following:
             receipt_date: The date of the receipt.
@@ -290,3 +287,59 @@ def read_transaction_from_user(database_name: str) -> Transaction:
 
     transaction = Transaction(receipt=receipt, expenses=expenses, ledger_entries=ledger_entries)
     return transaction
+
+
+def read_user_paystub() -> list:
+    """
+    Reads all data required from user to initialize a paystub object.
+
+    Returns:
+        Either a list of the following:
+            paystub_date: The date of the paystub.
+            paystub_payer: The payer of the receipt.
+        Or None if the user quits early.
+
+    """
+    # Get paystub date:
+    paystub_date = input("Enter date of receiving the income (YYYY-MM-DD): ")
+    if paystub_date.lower() == "q":
+        return None
+
+    # Get receipt location:
+    paystub_payer = input("Enter payer of the income: ")
+    if paystub_payer.lower() == "q":
+        return None
+    return [paystub_date, paystub_payer]
+
+
+def read_user_incomes(database_name: str) -> list:
+    """
+    Reads all data required from user to initialize an income object.
+
+    Specifically, reads in the amount of the income and the details of the income.
+
+    Arguments:
+        database_name: The name of the database to use.
+
+    Returns:
+        Either a list of the following:
+            income_amount: The amount of the income.
+            income_details: Any details about the income.
+
+    """
+    incomes = []
+    while True:
+        income_amount = input("Enter income amount (enter nothing or \"done\" if done entering income events): ")
+        if income_amount.lower() == "q":
+            return None
+        if income_amount == "" or income_amount == "done":
+            break
+
+        income_details = input("Enter income details (or enter to continue with no details): ")
+        if income_details.lower() == "q":
+            return None
+        
+        incomes.append([income_amount, income_details])
+    return incomes
+
+# Add "read_user_paystubledger" and "read_user_income_transaction"
