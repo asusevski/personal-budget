@@ -113,7 +113,7 @@ def initialize_empty_db(database_name: str):
     with create_connection(database_name) as c:
 
         # Payment types table (stores the names of the payment types eg: Visa, Cash, etc...)
-        c.execute("""CREATE TABLE IF NOT EXISTS payment_types (
+        c.execute("""CREATE TABLE IF NOT EXISTS accounts (
             id INTEGER PRIMARY KEY,
             name TEXT NOT NULL,
             description TEXT
@@ -154,9 +154,9 @@ def initialize_empty_db(database_name: str):
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             amount REAL NOT NULL,
             receipt_id INTEGER NOT NULL,
-            payment_type_id INTEGER NOT NULL,
+            account_id INTEGER NOT NULL,
             FOREIGN KEY (receipt_id) REFERENCES receipts(id),
-            FOREIGN KEY (payment_type_id) REFERENCES payment_types(id)
+            FOREIGN KEY (account_id) REFERENCES account(id)
         )""")
 
         # Income table (stores details about income eg: income from a job, etc...)
@@ -182,9 +182,9 @@ def initialize_empty_db(database_name: str):
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             amount REAL NOT NULL,
             paystub_id INTEGER NOT NULL,
-            payment_type_id INTEGER NOT NULL,
+            account_id INTEGER NOT NULL,
             FOREIGN KEY (paystub_id) REFERENCES paystubs(id),
-            FOREIGN KEY (payment_type_id) REFERENCES payment_types(id)
+            FOREIGN KEY (account_id) REFERENCES accounts(id)
         )""")
 
 

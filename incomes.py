@@ -56,7 +56,7 @@ class PaystubLedger():
     Attributes:
         date: The date of the transaction (YYYY-MM-DD)
         receipt: The receipt associated with the transaction
-        payment_type: The payment type associated with the transaction
+        account_id: The account id associated with the transaction
 
     Methods:
         insert_into_db(self, database_name): Insert the ledger entry into the database.
@@ -64,4 +64,4 @@ class PaystubLedger():
     """
     amount: str
     paystub: Paystub
-    payment_type_id: int
+    account_id: int

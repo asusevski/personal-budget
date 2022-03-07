@@ -38,9 +38,9 @@ class ExpenseCategory():
 
 
 @dataclass
-class PaymentType:
+class Account:
     """
-    This class stores Payment Types. A PaymentType object will contain a name and a description.
+    This class stores Accounts. An account object will contain a name and a description.
 
     eg: name = 'VisaXXXX' and Description = "TD Credit Card"
     
@@ -68,6 +68,6 @@ class PaymentType:
         Effects:
             Modifies table 'payment_types' in the database.
         """
-        payment_type_id = insert_into_table(database_name, 'payment_types', cols=['name', 'description'],\
+        account_id = insert_into_table(database_name, 'payment_types', cols=['name', 'description'],\
                                             values=[self.name, self.description])
-        return payment_type_id
+        return account_id

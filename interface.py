@@ -1,10 +1,10 @@
-from categories import ExpenseCategory, PaymentType
+from categories import Account, ExpenseCategory
 from expenses import Expense, LedgerEntry, Receipt
 from incomes import Income, Paystub, PaystubLedger
 from manage_database import print_table, search_category, search_expense
 import os
 import re
-from transactions import Transaction
+from transactions import IncomeTransaction, Transaction
 
 
 # CONSTANTS
@@ -42,17 +42,17 @@ def read_expense_category_from_user() -> ExpenseCategory:
     return expense_category
 
 
-def read_payment_type_from_user() -> PaymentType:
+def read_account_from_user() -> Account:
     """
     Reads a payment type from the user.
 
     Returns:
-        A PaymentType object.
+        An Account object.
     """
     name = input("Enter payment type name: ")
     description = input("Enter payment type description: ")
-    payment_type = PaymentType(name, description)
-    return payment_type
+    account = Account(name, description)
+    return account
 
 
 def read_user_receipt() -> list:
@@ -212,23 +212,23 @@ def read_user_ledger_entries(database_name: str, receipt_total: float) -> list:
     ledger_entries = []
     while abs(receipt_total) >= tol:
         print("Remaining on receipt: ${:.2f}".format(receipt_total))
-        print("Select payment id used to pay (see payment types below): ")
-        print_table(database_name, "payment_types")
-        payment_type_id = input("Enter payment id or enter \"add\" to add a new payment type: ")
-        if payment_type_id.lower() == "q":
+        print("Select account id used to pay (see accounts below): ")
+        print_table(database_name, "accounts")
+        account_id = input("Enter account id or enter \"add\" to add a new account: ")
+        if account_id.lower() == "q":
             return None
-        if payment_type_id.lower() == "add":
-            payment_type_name = input("Enter new payment type name: ")
-            payment_type_description = input("Enter payment type description (or enter to continue with no description): ")
-            payment_type = PaymentType(payment_type_name, payment_type_description)
-            payment_type_id = payment_type.insert_into_db(database_name)
+        if account_id.lower() == "add":
+            account_name = input("Enter new account name: ")
+            account_description = input("Enter account description (or enter to continue with no description): ")
+            account = Account(account_name, account_description)
+            account_id = account.insert_into_db(database_name)
         
         print("How much of the receipt did you pay with this payment type?")
         payment_amount = input("Enter payment amount ($): ")
         if payment_amount.lower() == "q":
             return None
         
-        ledger_entries.append([payment_amount, payment_type_id])
+        ledger_entries.append([payment_amount, account_id])
         receipt_total -= float(payment_amount)
     return ledger_entries
 
@@ -268,12 +268,12 @@ def read_transaction_from_user(database_name: str) -> Transaction:
     receipt = Receipt(total="{:.2f}".format(receipt_total), date=receipt_date, location=receipt_location)
 
     expenses = []
-    for expense in expense_user_data:
-        expense_name = expense[0]
-        expense_amount = expense[1]
-        expense_type = expense[2]
-        expense_details = expense[3]
-        expense_category = expense[4]
+    for exp in expense_user_data:
+        expense_name = exp[0]
+        expense_amount = exp[1]
+        expense_type = exp[2]
+        expense_details = exp[3]
+        expense_category = exp[4]
         expense = Expense(item=expense_name, amount=expense_amount, type=expense_type,\
                           details=expense_details, receipt=receipt, category_id=expense_category)
         expenses.append(expense)
@@ -281,8 +281,8 @@ def read_transaction_from_user(database_name: str) -> Transaction:
     ledger_entries = []
     for ledger_entry in ledger_entries_user_data:
         payment_amount = ledger_entry[0]
-        payment_type_id = ledger_entry[1]
-        ledger_entry = LedgerEntry(amount=payment_amount, receipt=receipt, payment_type_id=payment_type_id)
+        account_id = ledger_entry[1]
+        ledger_entry = LedgerEntry(amount=payment_amount, receipt=receipt, account_id=account_id)
         ledger_entries.append(ledger_entry)
 
     transaction = Transaction(receipt=receipt, expenses=expenses, ledger_entries=ledger_entries)
@@ -312,7 +312,7 @@ def read_user_paystub() -> list:
     return [paystub_date, paystub_payer]
 
 
-def read_user_incomes(database_name: str) -> list:
+def read_user_incomes() -> list:
     """
     Reads all data required from user to initialize an income object.
 
@@ -325,6 +325,7 @@ def read_user_incomes(database_name: str) -> list:
         Either a list of the following:
             income_amount: The amount of the income.
             income_details: Any details about the income.
+        Or None if the user quits early.
 
     """
     incomes = []
@@ -342,4 +343,96 @@ def read_user_incomes(database_name: str) -> list:
         incomes.append([income_amount, income_details])
     return incomes
 
-# Add "read_user_paystubledger" and "read_user_income_transaction"
+
+def read_user_paystub_ledger_entries(database_name: str, paystub_total: float) -> list:
+    """
+    Reads all data required from user to initialize a paystub_entry object.
+
+    Specifically, reads in the amount of the income and the details of the income.
+
+    Arguments:
+        database_name: The name of the database to use.
+
+    Returns:
+        Either a list of the following:
+            income_amount: The amount of the income.
+            income_details: Any details about the income.
+        Or None if the user quits early.
+
+    """
+    print("What accounts are being credited through this income event?")
+    tol = 10e-4
+    paystub_entries = []    
+    while abs(paystub_total) >= tol:
+        print("Remaining: ${:.2f}".format(paystub_total))
+        print("Select account receiving money (see accounts below): ")
+        print_table(database_name, "accounts")
+        account_id = input("Enter account id or enter \"add\" to add a new payment type: ")
+        if account_id.lower() == "q":
+            return None
+        if account_id.lower() == "add":
+            account_name = input("Enter new account name: ")
+            account_description = input("Enter account description (or enter to continue with no description): ")
+            payment_type = Account(account_name, account_description)
+            account_id = payment_type.insert_into_db(database_name)
+        
+        print("How much of the receipt did you pay with this payment type?")
+        income_amount = input("Enter payment amount ($): ")
+        if income_amount.lower() == "q":
+            return None
+        
+        paystub_entries.append([income_amount, account_id])
+        paystub_total -= float(income_amount)
+    return paystub_entries
+
+
+def read_incometransaction_from_user(database_name: str) -> Transaction:
+    """
+    Reads an income transaction from the user.
+
+    Arguments:
+        database_name: The name of the database to use.
+
+    Returns:
+        An IncomeTransaction object or None if the user ends input early with 'q' input.
+
+    """
+    paystub_user_data = read_user_paystub()
+    if not paystub_user_data:
+        return None
+
+    income_user_data = read_user_incomes(database_name)
+    if not income_user_data:
+        return None
+
+    # Calculate paystub total:
+    paystub_total = 0
+    for income in income_user_data:
+        amount = float(income[1])
+        paystub_total += amount
+    
+    paystub_ledger_entries_user_data = read_user_paystub_ledger_entries(database_name, paystub_total)
+    if not paystub_ledger_entries_user_data:
+        return None
+    
+    paystub_date = paystub_user_data[0]
+    paystub_payer = paystub_user_data[1]
+
+    paystub = Paystub(total="{:.2f}".format(paystub_total), date=paystub_date, payer=paystub_payer)
+
+    incomes = []
+    for inc in income_user_data:
+        income_amount = inc[0]
+        income_details = inc[1]
+        income = Income(amount=income_amount, paystub=paystub, details=income_details)
+        incomes.append(income)
+    
+    paystub_ledger_entries = []
+    for paystub_ledger_entry in paystub_ledger_entries_user_data:
+        paystub_ledger_amount = paystub_ledger_entry[0]
+        paystub_ledger_account_id = paystub_ledger_entry[1]
+        paystub_ledger_entry = PaystubLedger(amount=paystub_ledger_amount, paystub=paystub, account_id=paystub_ledger_account_id)
+        paystub_ledger_entries.append(paystub_ledger_entry)
+
+    transaction = IncomeTransaction(paystub=paystub, income_events=incomes, ledger_entries=paystub_ledger_entries)
+    return transaction

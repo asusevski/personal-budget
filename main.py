@@ -1,6 +1,6 @@
-from categories import ExpenseCategory, PaymentType
-from interface import find_db, read_transaction_from_user
-from manage_database import initialize_empty_db
+from categories import ExpenseCategory, Account
+from interface import find_db, read_incometransaction_from_user, read_transaction_from_user
+from manage_database import initialize_empty_db, print_table
 import sys
 
 
@@ -20,7 +20,8 @@ def main():
         1. Initialize budget database
         2. Insert expenses into expenses table
         3. Insert incomes in incomes table
-        4. Exit
+        4. Print a table
+        5. Exit
 
         """)
         choice = input("Enter your choice: ")
@@ -41,14 +42,14 @@ def main():
             initialize_empty_db(database_name)
 
             # Enter payment types:
-            print("Initializing payment types...")
+            print("Initializing accounts...")
             while True:
-                payment_name = input("Enter payment name (eg: VisaXXXX, Cash, Checking, Bitcoin, etc..) or q to exit: ")
+                payment_name = input("Enter account name (eg: VisaXXXX, Cash, Checking, Bitcoin, etc..) or q to exit: ")
                 if payment_name == "" or payment_name.lower() == "q":
                     break
-                payment_description = input("Enter payment description (can be left blank): ")
-                payment_type = PaymentType(payment_name, payment_description)
-                payment_type.insert_into_db(database_name)
+                account_description = input("Enter account description (can be left blank): ")
+                account = Account(payment_name, account_description)
+                account.insert_into_db(database_name)
 
 
             print("""Initializing expense categories...
@@ -86,10 +87,33 @@ def main():
                     print("Transaction added.")
 
         if choice == "3":
-            pass
+            database_name = find_db()
+            if not database_name:
+                print("No database found. Please intialize a database first.")
+                continue
+
+            print("Enter q at any time to stop entering income transactions.")
+            while True:
+                income_transaction = read_incometransaction_from_user(database_name)
+                if not income_transaction:
+                    print("Transaction cancelled.")
+                    break
+                else:
+                    # Insert transaction into database
+                    income_transaction.execute(database_name)
+                    print("Transaction added.")
         
-        # Quit
         if choice == "4":
+            database_name = find_db()
+            if not database_name:
+                print("No database found. Please intialize a database first.")
+                continue
+
+            table_name = input("Enter table name to print: ")
+            print_table(database_name, table_name)
+
+        # Quit
+        if choice == "5":
             sys.exit()
 
 
