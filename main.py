@@ -1,6 +1,6 @@
 from categories import ExpenseCategory, Account
 from interface import find_db, read_incometransaction_from_user, read_transaction_from_user
-from manage_database import initialize_empty_db, print_table
+from manage_database import delete_row, initialize_empty_db, print_table
 import sys
 
 
@@ -21,7 +21,8 @@ def main():
         2. Insert expenses into expenses table
         3. Insert incomes in incomes table
         4. Print a table
-        5. Exit
+        5. Delete a row from a table
+        6. Exit
 
         """)
         choice = input("Enter your choice: ")
@@ -44,7 +45,7 @@ def main():
             # Enter payment types:
             print("Initializing accounts...")
             while True:
-                payment_name = input("Enter account name (eg: VisaXXXX, Cash, Checking, Bitcoin, etc..) or q to exit: ")
+                payment_name = input("Enter account name (eg: VisaXXXX, Cash, Checking, Bitcoin, etc..) or q if you are done entering accounts: ")
                 if payment_name == "" or payment_name.lower() == "q":
                     break
                 account_description = input("Enter account description (can be left blank): ")
@@ -54,15 +55,15 @@ def main():
 
             print("""Initializing expense categories...
             
-            Each category entry will have a category and subcategory.
-            The category will be a broad categorization and the subcategory, an optional field, 
-            will be used to make the category more clear (particularly useful for groceries -- one may 
-            want to have the category be listed as \'groceries\' and the subcategory be \'chicken\', for example).
+Each category entry will have a category and subcategory.
+The category will be a broad categorization and the subcategory, an optional field, 
+will be used to make the category more clear (particularly useful for groceries -- one may 
+want to have the category be listed as \'groceries\' and the subcategory be \'chicken\', for example).
             
             """)
 
             while True:
-                category_name = input("Enter category name (eg: grocery, bills, etc...) or q to exit: ")
+                category_name = input("Enter category name (eg: grocery, bills, etc...) or q if you are done entering expense types: ")
                 if category_name == "" or category_name == "q":
                     break
                 subcategory = input("Enter subcategory (can be left blank): ")
@@ -112,8 +113,20 @@ def main():
             table_name = input("Enter table name to print: ")
             print_table(database_name, table_name)
 
-        # Quit
         if choice == "5":
+            database_name = find_db()
+            if not database_name:
+                print("No database found. Please intialize a database first.")
+                continue
+
+            table_name = input("Enter table from which to delete a row: ")
+            print_table(database_name, table_name)
+            row_id = input("Enter row id to delete: ")
+            delete_row(database_name, table_name, row_id)
+            print("Row deleted.")
+
+        # Quit
+        if choice == "6":
             sys.exit()
 
 

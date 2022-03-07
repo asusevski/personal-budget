@@ -139,11 +139,13 @@ def read_user_expenses(database_name: str) -> list:
             print("Found a prior expense entered with the same name. Is this the same expense we are entering?")
             print("Existing expense: ")
             print(expense_table)
-            existing_expense_category = existing_expense[-1]
+            existing_expense_category = existing_expense[-2]
             category_table, _ = search_category(database_name, existing_expense_category)
             print("Existing expense category: ")
             print(category_table)
             same_expense = input("Same item (you will be given the chance to confirm the amount, details, and type of the expense)? (y/n): ")
+            if same_expense.lower() == "q":
+                return None
             if same_expense.lower() == "y":
                 expense_name = existing_expense[1]
 
@@ -203,6 +205,7 @@ def read_user_expenses(database_name: str) -> list:
                 expense_cat = ExpenseCategory(expense_category_name, expense_subcategory)
                 expense_category_id = expense_cat.insert_into_db(database_name)
             expenses.append([expense_name, expense_amount, expense_type, expense_details, expense_category_id])
+            print("Expense recorded.")
     return expenses
 
 

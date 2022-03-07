@@ -245,13 +245,13 @@ def search_category(database_name: str, category_id: int) -> Tuple[PrettyTable, 
 
     Args:
         database_name: The name of the database to search in.
-        category: The category to search for.
+        category_id: The category to search for.
 
     Returns:
-        A Category object containing the details of the category.
+        A tuple containing the PrettyTable object and the list of values of the category.
     """
     with create_connection(database_name) as c:
-        c.execute(f"SELECT * FROM categories WHERE id = {category_id}")
+        c.execute(f"SELECT * FROM categories WHERE id = '{category_id}'")
         # If there are no values, return None and empty list
         vals = c.fetchone()
         if not vals:
@@ -265,3 +265,14 @@ def search_category(database_name: str, category_id: int) -> Tuple[PrettyTable, 
         table.clear_rows()
         table.add_row(vals)
         return table, vals
+
+
+def delete_row(database_name: str, table_name: str, row_id: int) -> None:
+    """
+    Delete a row from the database.
+
+    Args:
+        database_name: The name of the database to delete from.
+    """
+    with create_connection(database_name) as c:
+        c.execute(f"DELETE FROM {table_name} WHERE id = '{row_id}'")

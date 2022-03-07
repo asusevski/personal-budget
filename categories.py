@@ -68,6 +68,6 @@ class Account:
         Effects:
             Modifies table 'payment_types' in the database.
         """
-        account_id = insert_into_table(database_name, 'payment_types', cols=['name', 'description'],\
+        account_id = insert_into_table(database_name, 'accounts', cols=['name', 'description'],\
                                             values=[self.name, self.description])
         return account_id
