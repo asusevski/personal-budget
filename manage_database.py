@@ -1,8 +1,13 @@
 from contextlib import contextmanager
+from fuzzywuzzy import fuzz
 import logging
 from prettytable import PrettyTable, from_db_cursor
 import sqlite3
 from typing import Tuple
+
+
+# Constants:
+SEARCH_THRESHOLD = 50
 
 
 @contextmanager
@@ -237,6 +242,25 @@ def search_expense(database_name: str, expense_item: str) -> Tuple[PrettyTable, 
         table.clear_rows()
         table.add_row(vals)
         return table, vals
+
+
+def search_expense_fuzzy_match(database_name: str, expense_item: str)-> Tuple[PrettyTable, list]:
+    with create_connection(database_name) as c:
+        c.execute(f"SELECT * FROM expenses")
+        rows = c.fetchall()
+        names = [row[1] for row in rows]
+        ratios = [(idx, fuzz.ratio(name.lower(), expense_item)) for idx, name in enumerate(names)]
+        ratios = sorted(ratios, key=lambda x: x[1], reverse=True)
+        matches = [ratio[0] for ratio in ratios if ratio[1] > SEARCH_THRESHOLD]
+        matches = [rows[match] for match in matches]
+        if not matches:
+            return None, []
+        table = from_db_cursor(c)
+        # Clearing rows to make sure there's only one row for the expense (for simplicity and clarity of reading)
+        table.clear_rows()
+        for match in matches:
+            table.add_row(match)
+        return table, matches
 
 
 def search_category(database_name: str, category_id: int) -> Tuple[PrettyTable, list]:
