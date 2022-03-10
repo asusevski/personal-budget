@@ -85,7 +85,7 @@ want to have the category be listed as \'groceries\' and the subcategory be \'ch
                 else:
                     # Insert transaction into database
                     transaction.execute(database_name)
-                    print("Transaction added.")
+                    print("Transaction added to database.")
 
         if choice == "3":
             database_name = find_db()

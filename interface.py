@@ -106,6 +106,21 @@ def apply_discount_and_tax(expense_amount: str) -> str:
     return "{:.2f}".format(expense_amount)
 
 
+def cycle_suggestions(possible_vals: list, col_name: str) -> str:
+    idx = 0
+    while True:
+        print(f"Is {possible_vals[idx]} the entry for the column \"{col_name}\" you want to add?")
+        cmd = input(f"Press enter to confirm suggestion, \'n\' to see the next suggestion, \'q\' to exit, and anything else to enter a custom entry: ")
+        if cmd.lower() == "":
+            return str(possible_vals[idx])
+        elif cmd.lower() == "n":
+            idx = (idx + 1) % len(possible_vals)
+        elif cmd.lower() == "q":
+            return None
+        else:
+            return cmd
+
+
 def read_user_expenses(database_name: str) -> list:
     """
     Reads all data required from user to initialize an expense object.
@@ -133,50 +148,55 @@ def read_user_expenses(database_name: str) -> list:
         if expense_name == "" or expense_name == "done":
             break
 
-        # Search to see if this expense has been entered before. If it has, ask for confirmation from user to reuse values.
-        expense_table, existing_expense = search_expense(database_name, expense_name)
-        if existing_expense:
-            print("Found a prior expense entered with the same name. Is this the same expense we are entering?")
-            print("Existing expense: ")
-            print(expense_table)
-            existing_expense_category = existing_expense[-2]
-            category_table, _ = search_category(database_name, existing_expense_category)
-            print("Existing expense category: ")
-            print(category_table)
-            same_expense = input("Same item (you will be given the chance to confirm the amount, details, and type of the expense)? (y/n): ")
-            if same_expense.lower() == "q":
+        _, vals = search_expense(database_name, expense_name)
+        if vals:
+            print("We found an existing entry with a similar name.")
+            possible_item_names = [val[1] for val in vals]
+            expense_name = cycle_suggestions(possible_item_names, "expense_name")
+            if expense_name.lower() == "q":
                 return None
-            if same_expense.lower() == "y":
-                expense_name = existing_expense[1]
-
-                # Confirm expense amount:
-                amount_confirm = input(f"If {existing_expense[2]} is the correct price, press enter. Otherwise, input correct price ($): ")
-                if amount_confirm == "q":
+            
+            possible_amounts = [val[2] for val in vals]
+            # NOTE: if user enters thier own price, this must run the apply_tax_and_discount function
+            expense_amount = cycle_suggestions(possible_amounts, "amount")
+            if expense_amount.lower() == "q":
+                return None
+            
+            possible_types = list(set([val[3] for val in vals]))
+            expense_type = cycle_suggestions(possible_types, "type")
+            if expense_type.lower() == "q":
+                return None
+            
+            # For category ids, we need more info since the value is acutally an ID rather than a name that's recognizable to the user.
+            possible_category_ids = list(set([val[5] for val in vals]))
+            for possible_category in possible_category_ids:
+                category_table, _ = search_category(database_name, possible_category)
+                print(category_table)
+                cmd = input("Is this the category that this expense belongs to? Press enter to confirm suggestion, \'n\' to see the next suggestion, \'q\' to exit, and anything else to enter a custom entry: ")
+                if cmd.lower() == "":
+                    expense_category = possible_category
+                    break
+                elif cmd.lower() == "n":
+                    continue
+                elif cmd.lower() == "q":
                     return None
-                if amount_confirm != "":
-                    expense_amount = amount_confirm
                 else:
-                    expense_amount = existing_expense[2]
-                    expense_amount = apply_discount_and_tax(expense_amount)
-                    if not expense_amount:
-                        return None
+                    expense_category = cmd
+            # NOTE: if the user presses 'n' nonstop here, we'll get an error since no category will be initialized.. Fix!
 
-                # Confirm expense type:
-                type_confirm = input(f"If {existing_expense[3]} is the correct type, press enter. Otherwise, input correct type: ")
-                if type_confirm == "q":
-                    return None
-                if type_confirm != "":
-                    expense_type = type_confirm
-                else:
-                    expense_type = existing_expense[3]
+            expense_details = input("Enter any details about the expense (or enter to continue with no details): ")
+            if expense_details.lower() == "q":
+                return None
 
-                expense_category_id = existing_expense_category
-                expense_details = input("Enter any details about the expense (or enter to continue with no details): ")
-                if expense_details.lower() == "q":
-                    return None
-                expenses.append([expense_name, expense_amount, expense_type, expense_details, expense_category_id])
+            # TEMP FIX FOR NOTE ABOVE:
+            try:
+                expenses.append([expense_name, expense_amount, expense_type, expense_details, expense_category])
+            except NameError:
+                print_table(database_name=database_name, table_name="expense_category")
+                expense_category = input("Enter the category id of the expense: ")
+                expenses.append([expense_name, expense_amount, expense_type, expense_details, expense_category])
+                print("Expense recorded.")
 
-        # If there are no existing expenses or the expense is not the same as the existing expense, ask for expense details.
         else:
             expense_amount = input("Enter expense amount ($): ")
             if expense_amount.lower() == "q":

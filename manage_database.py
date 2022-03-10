@@ -7,7 +7,7 @@ from typing import Tuple
 
 
 # Constants:
-SEARCH_THRESHOLD = 50
+SEARCH_THRESHOLD = 70
 
 
 @contextmanager
@@ -214,49 +214,26 @@ def query_db(database_name: str, sql_query: str) -> list:
         return c.fetchall()
 
 
-def search_expense(database_name: str, expense_item: str) -> Tuple[PrettyTable, list]:
-    """
-    Search for an expense in the database.
-
-    Args:
-        database_name: The name of the database to search in.
-        expense_item: The item of the expense to search for.
-
-    Returns:
-        An Expense object containing the details of the expense.
-    """
+def search_expense(database_name: str, expense_item: str)-> Tuple[PrettyTable, list]:
     with create_connection(database_name) as c:
-        c.execute(f"SELECT * FROM expenses WHERE item = '{expense_item}'")
-        vals = c.fetchone()
-        if not vals:
-            return None, []
-        vals = list(vals)
-        # If there are no values, return None and empty list
-        #if vals is None:
-        #    return None, []
-        # Else, due to the fact that the line "list(c.fetchone())" "empties" the cursor (if there is only one row), 
-        # we need to create a PrettyTable object ourselves with the values retrieved.
-        # This line is required to get the columns of the table (even if no rows exist)
-        table = from_db_cursor(c)
-        # Clearing rows to make sure there's only one row for the expense (for simplicity and clarity of reading)
-        table.clear_rows()
-        table.add_row(vals)
-        return table, vals
-
-
-def search_expense_fuzzy_match(database_name: str, expense_item: str)-> Tuple[PrettyTable, list]:
-    with create_connection(database_name) as c:
-        c.execute(f"SELECT * FROM expenses")
+        # We add the stipulation that we only search the last year because we don't need to look past a year for most things
+        # Also, no need to return duplicate item names, so we remove them
+        c.execute("SELECT e.id, item, amount, type, receipt_id, category_id, details \
+            FROM receipts INNER JOIN (SELECT * FROM expenses e1 WHERE NOT EXISTS \
+                (SELECT * FROM expenses e2 WHERE e1.item = e2.item and e2.id < e1.id)) e ON receipts.id = e.receipt_id\
+            WHERE JulianDay('now') - JulianDay(date) <= 365")
+        #c.execute(f"SELECT expenses.id, item, amount, type, receipt_id, category_id, details \
+        #    FROM expenses INNER JOIN receipts ON expenses.receipt_id=receipts.id WHERE JulianDay('now') - JulianDay(date) <= 365")
         rows = c.fetchall()
         names = [row[1] for row in rows]
-        ratios = [(idx, fuzz.ratio(name.lower(), expense_item)) for idx, name in enumerate(names)]
+        ratios = [(idx, fuzz.partial_ratio(name.lower(), expense_item)) for idx, name in enumerate(names)]
         ratios = sorted(ratios, key=lambda x: x[1], reverse=True)
         matches = [ratio[0] for ratio in ratios if ratio[1] > SEARCH_THRESHOLD]
         matches = [rows[match] for match in matches]
         if not matches:
             return None, []
+        
         table = from_db_cursor(c)
-        # Clearing rows to make sure there's only one row for the expense (for simplicity and clarity of reading)
         table.clear_rows()
         for match in matches:
             table.add_row(match)
