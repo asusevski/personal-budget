@@ -17,19 +17,21 @@ def main():
     while True:
         print("""
 
-        1. Initialize budget database
-        2. Insert expenses into expenses table
-        3. Insert incomes in incomes table
-        4. Print a table
-        5. Delete a row from a table
-        6. Exit
+1. Initialize budget database
+2. Insert expenses into expenses table
+3. Insert incomes in incomes table
+4. Print a table
+5. Delete a row from a table
+6. Exit
 
         """)
-        choice = input("Enter your choice: ")
+        print("Enter your choice: ")
+        choice = input("> ")
 
         # Initialize budget database
         if choice == "1":
-            database_name = input("Enter database name (default name is budget): ")
+            print("Enter database name (default name is budget): ")
+            database_name = input("> ")
 
             # If no custome database name is entered, use default name
             if database_name == "":
@@ -45,10 +47,12 @@ def main():
             # Enter payment types:
             print("Initializing accounts...")
             while True:
-                payment_name = input("Enter account name (eg: VisaXXXX, Cash, Checking, Bitcoin, etc..) or q if you are done entering accounts: ")
+                print("Enter account name (eg: VisaXXXX, Cash, Checking, Bitcoin, etc..) or q if you are done entering accounts: ")
+                payment_name = input("> ")
                 if payment_name == "" or payment_name.lower() == "q":
                     break
-                account_description = input("Enter account description (can be left blank): ")
+                print("Enter account description (can be left blank): ")
+                account_description = input("> ")
                 account = Account(payment_name, account_description)
                 account.insert_into_db(database_name)
 
@@ -63,10 +67,12 @@ want to have the category be listed as \'groceries\' and the subcategory be \'ch
             """)
 
             while True:
-                category_name = input("Enter category name (eg: grocery, bills, etc...) or q if you are done entering expense types: ")
+                print("Enter category name (eg: grocery, bills, etc...) or q if you are done entering expense types: ")
+                category_name = input("> ")
                 if category_name == "" or category_name == "q":
                     break
-                subcategory = input("Enter subcategory (can be left blank): ")
+                print("Enter subcategory (can be left blank): ")
+                subcategory = input("> ")
                 expense_category = ExpenseCategory(category_name, subcategory)
                 expense_category.insert_into_db(database_name)
 
@@ -109,8 +115,9 @@ want to have the category be listed as \'groceries\' and the subcategory be \'ch
             if not database_name:
                 print("No database found. Please intialize a database first.")
                 continue
-
-            table_name = input("Enter table name to print: ")
+            
+            print("Enter table name to print: ")
+            table_name = input("> ")
             print_table(database_name, table_name)
 
         if choice == "5":
@@ -119,9 +126,11 @@ want to have the category be listed as \'groceries\' and the subcategory be \'ch
                 print("No database found. Please intialize a database first.")
                 continue
 
-            table_name = input("Enter table from which to delete a row: ")
+            print("Enter table from which to delete a row: ")
+            table_name = input("> ")
             print_table(database_name, table_name)
-            row_id = input("Enter row id to delete: ")
+            print("Enter row id to delete: ")
+            row_id = input("> ")
             delete_row(database_name, table_name, row_id)
             print("Row deleted.")
 

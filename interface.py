@@ -36,8 +36,10 @@ def read_expense_category_from_user() -> ExpenseCategory:
     Returns:
         An ExpenseCategory object.
     """    
-    name = input("Enter expense category name: ")
-    description = input("Enter expense category description: ")
+    print("Enter expense category name: ")
+    name = input("> ")
+    print("Enter expense category description: ")
+    description = input("> ")
     expense_category = ExpenseCategory(name, description)
     return expense_category
 
@@ -49,8 +51,10 @@ def read_account_from_user() -> Account:
     Returns:
         An Account object.
     """
-    name = input("Enter payment type name: ")
-    description = input("Enter payment type description: ")
+    print("Enter payment type name: ")
+    name = input("> ")
+    print("Enter payment type description: ")
+    description = input("> ")
     account = Account(name, description)
     return account
 
@@ -67,12 +71,14 @@ def read_user_receipt() -> list:
 
     """
     # Get receipt date:
-    receipt_date = input("Enter date of expense or expenses (YYYY-MM-DD): ")
+    print("Enter date of expense or expenses (YYYY-MM-DD): ")
+    receipt_date = input("> ")
     if receipt_date.lower() == "q":
         return None
 
     # Get receipt location:
-    receipt_location = input("Enter location of expense(s): ")
+    print("Enter location of expense(s): ")
+    receipt_location = input("> ")
     if receipt_location.lower() == "q":
         return None
     return [receipt_date, receipt_location]
@@ -81,7 +87,8 @@ def read_user_receipt() -> list:
 def apply_discount_and_tax(expense_amount: str) -> str:
     expense_amount = float(expense_amount)
     # Check if expense has a discount to apply
-    discount = input("Enter any discount amount as a % (or enter to continue with no discount): ")
+    print("Enter any discount amount as a % (or enter to continue with no discount): ")
+    discount = input("> ")
     if discount.lower() == "q":
         return None
     if discount != "":
@@ -89,11 +96,13 @@ def apply_discount_and_tax(expense_amount: str) -> str:
         expense_amount = expense_amount * (1 - (discount/100))
 
     # Check if expense is taxable:
-    taxable = input("Is this expense taxable? (y/n): ")
+    print("Is this expense taxable? (y/n): ")
+    taxable = input("> ")
     if taxable.lower() == "q":
         return None
     if taxable.lower() == "y":
-        tax_rate = input("Default tax rate is 13%, enter a different rate (as a %) if desired or enter to continue with 13%: ")
+        print("Default tax rate is 13%, enter a different rate (as a %) if desired or enter to continue with 13%: ")
+        tax_rate = input("> ")
         if tax_rate.lower() == "q":
             return None
         if tax_rate == "":
@@ -110,7 +119,8 @@ def cycle_suggestions(possible_vals: list, col_name: str) -> str:
     idx = 0
     while True:
         print(f"Is {possible_vals[idx]} the entry for the column \"{col_name}\" you want to add?")
-        cmd = input(f"Press enter to confirm suggestion, \'n\' to see the next suggestion, \'exit\' to exit and ignore suggestions, and anything else to enter a custom entry: ")
+        print("Press enter to confirm suggestion, \'n\' to see the next suggestion, \'exit\' to exit and ignore suggestions, and anything else to enter a custom entry: ")
+        cmd = input("> ")
         if cmd.lower() == "":
             return str(possible_vals[idx])
         elif cmd.lower() == "n":
@@ -122,7 +132,8 @@ def cycle_suggestions(possible_vals: list, col_name: str) -> str:
 
 
 def read_expense_name() -> str:
-    expense_name = input("Enter expense name (enter nothing or \"done\" if done entering expenses): ")
+    print("Enter expense name (enter nothing or \"done\" if done entering expenses): ")
+    expense_name = input("> ")
     if expense_name.lower() == "q":
         return None
     if expense_name == "" or expense_name == "done":
@@ -131,7 +142,8 @@ def read_expense_name() -> str:
 
 
 def read_expense_amount() -> str:
-    expense_amount = input("Enter expense amount ($): ")
+    print("Enter expense amount ($): ")
+    expense_amount = input("> ")
     if expense_amount.lower() == "q":
         return None
 
@@ -143,14 +155,16 @@ def read_expense_amount() -> str:
 
 
 def read_expense_type() -> str:
-    expense_type = input("Enter type of expense (want, need, or savings): ")
+    print("Enter type of expense (want, need, or savings): ")
+    expense_type = input("> ")
     if expense_type.lower() == "q":
         return None
     return expense_type
 
 
 def read_expense_details() -> str:
-    expense_details = input("Enter any details about the expense (or enter to continue with no details): ")
+    print("Enter any details about the expense (or enter to continue with no details): ")
+    expense_details = input("> ")
     if expense_details.lower() == "q":
         return None
     return expense_details
@@ -159,12 +173,15 @@ def read_expense_details() -> str:
 def read_expense_category(database_name: str, expense_name: str) -> str:
     print(f"Select expense category id for {expense_name} (see categories below): ")
     print_table(database_name, "categories")
-    expense_category_id = input(f"Enter expense category id for {expense_name} or enter \"add\" to add a new expense category for this expense: ")
+    print(f"Enter expense category id for {expense_name} or enter \"add\" to add a new expense category for this expense: ")
+    expense_category_id = input("> ")
     if expense_category_id.lower() == "q":
         return None
     if expense_category_id.lower() == "add":
-        expense_category_name = input("Enter new expense category name: ")
-        expense_subcategory = input("Enter expense subcategory name (or enter to continue with no subcategory): ")
+        print("Enter new expense category name: ")
+        expense_category_name = input("> ")
+        print("Enter expense subcategory name (or enter to continue with no subcategory): ")
+        expense_subcategory = input("> ")
         expense_cat = ExpenseCategory(expense_category_name, expense_subcategory)
         expense_category_id = expense_cat.insert_into_db(database_name)
     return expense_category_id
@@ -353,17 +370,21 @@ def read_user_ledger_entries(database_name: str, receipt_total: float) -> list:
         print("Remaining on receipt: ${:.2f}".format(receipt_total))
         print("Select account id used to pay (see accounts below): ")
         print_table(database_name, "accounts")
-        account_id = input("Enter account id or enter \"add\" to add a new account: ")
+        print("Enter account id or enter \"add\" to add a new account: ")
+        account_id = input("> ")
         if account_id.lower() == "q":
             return None
         if account_id.lower() == "add":
-            account_name = input("Enter new account name: ")
-            account_description = input("Enter account description (or enter to continue with no description): ")
+            print("Enter new account name: ")
+            account_name = input("> ")
+            print("Enter account description (or enter to continue with no description): ")
+            account_description = input("> ")
             account = Account(account_name, account_description)
             account_id = account.insert_into_db(database_name)
         
         print("How much of the receipt did you pay with this payment type?")
-        payment_amount = input("Enter payment amount ($): ")
+        print("Enter payment amount ($): ")
+        payment_amount = input("> ")
         if payment_amount.lower() == "q":
             return None
         
@@ -440,12 +461,14 @@ def read_user_paystub() -> list:
 
     """
     # Get paystub date:
-    paystub_date = input("Enter date of receiving the income (YYYY-MM-DD): ")
+    print("Enter date of receiving the income (YYYY-MM-DD): ")
+    paystub_date = input("> ")
     if paystub_date.lower() == "q":
         return None
 
     # Get receipt location:
-    paystub_payer = input("Enter payer of the income: ")
+    print("Enter payer of the income: ")
+    paystub_payer = input("> ")
     if paystub_payer.lower() == "q":
         return None
     return [paystub_date, paystub_payer]
@@ -469,13 +492,15 @@ def read_user_incomes() -> list:
     """
     incomes = []
     while True:
-        income_amount = input("Enter income amount (enter nothing or \"done\" if done entering income events): ")
+        print("Enter income amount (enter nothing or \"done\" if done entering income events): ")
+        income_amount = input("> ")
         if income_amount.lower() == "q":
             return None
         if income_amount == "" or income_amount == "done":
             break
-
-        income_details = input("Enter income details (or enter to continue with no details): ")
+        
+        print("Enter income details (or enter to continue with no details): ")
+        income_details = input("> ")
         if income_details.lower() == "q":
             return None
         
@@ -506,17 +531,21 @@ def read_user_paystub_ledger_entries(database_name: str, paystub_total: float) -
         print("Remaining: ${:.2f}".format(paystub_total))
         print("Select account receiving money (see accounts below): ")
         print_table(database_name, "accounts")
-        account_id = input("Enter account id or enter \"add\" to add a new payment type: ")
+        print("Enter account id or enter \"add\" to add a new payment type: ")
+        account_id = input("> ")
         if account_id.lower() == "q":
             return None
         if account_id.lower() == "add":
-            account_name = input("Enter new account name: ")
-            account_description = input("Enter account description (or enter to continue with no description): ")
+            print("Enter new account name: ")
+            account_name = input("> ")
+            print("Enter account description (or enter to continue with no description): ")
+            account_description = input("> ")
             payment_type = Account(account_name, account_description)
             account_id = payment_type.insert_into_db(database_name)
         
         print("How much of the receipt did you pay with this payment type?")
-        income_amount = input("Enter payment amount ($): ")
+        print("Enter payment amount ($): ")
+        income_amount = input("> ")
         if income_amount.lower() == "q":
             return None
         
