@@ -110,15 +110,130 @@ def cycle_suggestions(possible_vals: list, col_name: str) -> str:
     idx = 0
     while True:
         print(f"Is {possible_vals[idx]} the entry for the column \"{col_name}\" you want to add?")
-        cmd = input(f"Press enter to confirm suggestion, \'n\' to see the next suggestion, \'q\' to exit, and anything else to enter a custom entry: ")
+        cmd = input(f"Press enter to confirm suggestion, \'n\' to see the next suggestion, \'exit\' to exit and ignore suggestions, and anything else to enter a custom entry: ")
         if cmd.lower() == "":
             return str(possible_vals[idx])
         elif cmd.lower() == "n":
             idx = (idx + 1) % len(possible_vals)
-        elif cmd.lower() == "q":
-            return None
+        elif cmd.lower() == "exit":
+            return "exit"
         else:
             return cmd
+
+
+def read_expense_name() -> str:
+    expense_name = input("Enter expense name (enter nothing or \"done\" if done entering expenses): ")
+    if expense_name.lower() == "q":
+        return None
+    if expense_name == "" or expense_name == "done":
+        return "done"
+    return expense_name
+
+
+def read_expense_amount() -> str:
+    expense_amount = input("Enter expense amount ($): ")
+    if expense_amount.lower() == "q":
+        return None
+
+    expense_amount = apply_discount_and_tax(expense_amount)
+    if not expense_amount:
+        return None
+
+    return expense_amount
+
+
+def read_expense_type() -> str:
+    expense_type = input("Enter type of expense (want, need, or savings): ")
+    if expense_type.lower() == "q":
+        return None
+    return expense_type
+
+
+def read_expense_details() -> str:
+    expense_details = input("Enter any details about the expense (or enter to continue with no details): ")
+    if expense_details.lower() == "q":
+        return None
+    return expense_details
+
+
+def read_expense_category(database_name: str, expense_name: str) -> str:
+    print(f"Select expense category id for {expense_name} (see categories below): ")
+    print_table(database_name, "categories")
+    expense_category_id = input(f"Enter expense category id for {expense_name} or enter \"add\" to add a new expense category for this expense: ")
+    if expense_category_id.lower() == "q":
+        return None
+    if expense_category_id.lower() == "add":
+        expense_category_name = input("Enter new expense category name: ")
+        expense_subcategory = input("Enter expense subcategory name (or enter to continue with no subcategory): ")
+        expense_cat = ExpenseCategory(expense_category_name, expense_subcategory)
+        expense_category_id = expense_cat.insert_into_db(database_name)
+    return expense_category_id
+
+
+def read_user_expenses_no_suggestions(database_name: str, **kwargs) -> list:
+    """
+    Reads all data required from user to initialize an expense object.
+
+    Specifically, reads in the expense name, amount, type, details, and category id.
+
+    Arguments:
+        database_name: The name of the database to use.
+        kwargs: A dictionary of already queried items.
+
+    Returns:
+        Either a list of the following:
+            expense_name: The name of the expense.
+            expense_amount: The amount of the expense.
+            expense_type: The type of the expense.
+            expense_details: Any details about the expense.
+            expense_category_id: The category id of the expense.
+        Or None if the user quits early.
+
+    """
+    expense = []
+    if "expense_name" not in kwargs:
+        expense_name = read_expense_name()
+        if not expense_name or expense_name == "done":
+            return None
+        expense.append(expense_name)
+    else:
+        expense.append(kwargs["expense_name"])
+
+    if "expense_amount" not in kwargs:
+        expense_amount = read_expense_amount()
+        if not expense_amount:
+            return None
+        expense.append(expense_amount)
+    else:
+        expense.append(kwargs["expense_amount"])
+
+    if "expense_type" not in kwargs:
+        expense_type = read_expense_type()
+        if not expense_type:
+            return None
+        expense.append(expense_type)
+    else:
+        expense.append(kwargs["expense_type"])
+
+    if "expense_details" not in kwargs:
+        expense_details = read_expense_details()
+        # Expense details is optional, so empty string is valid. Thus, need to check if we have None or empty string.
+        if expense_details is None:
+            return None
+        expense.append(expense_details)
+    else:
+        expense.append(kwargs["expense_details"])
+
+    if "expense_category_id" not in kwargs:
+        # It's possible there's no local variable expense_name, so we just grab it from the expense list.
+        expense_category_id = read_expense_category(database_name, expense[0])
+        if not expense_category_id:
+            return None
+        expense.append(expense_category_id)
+    else:
+        expense.append(kwargs["expense_category_id"])
+
+    return expense
 
 
 def read_user_expenses(database_name: str) -> list:
@@ -142,89 +257,90 @@ def read_user_expenses(database_name: str) -> list:
     """
     expenses = []
     while True:
-        expense_name = input("Enter expense name (enter nothing or \"done\" if done entering expenses): ")
-        if expense_name.lower() == "q":
+        expense_name = read_expense_name()
+        if not expense_name:
             return None
-        if expense_name == "" or expense_name == "done":
+        if expense_name == "done":
             break
-
+        
+        # Search for similar expense names
         _, vals = search_expense(database_name, expense_name)
         if vals:
             print("We found an existing entry with a similar name.")
             possible_item_names = [val[1] for val in vals]
-            expense_name = cycle_suggestions(possible_item_names, "expense_name")
-            if expense_name.lower() == "q":
+            expense_name_suggestion = cycle_suggestions(possible_item_names, "expense_name")
+            if expense_name_suggestion.lower() == "q": # Early quit
                 return None
+            elif expense_name_suggestion == "exit": # Ignore suggestions
+                expense = read_user_expenses_no_suggestions(database_name, expense_name=expense_name)
+                if not expense:
+                    return None
+                expenses.append(expense)
+                continue
+            else:
+                expense_name = expense_name_suggestion
             
+
             possible_amounts = [val[2] for val in vals]
-            # NOTE: if user enters thier own price, this must run the apply_tax_and_discount function
-            expense_amount = cycle_suggestions(possible_amounts, "amount")
-            if expense_amount.lower() == "q":
+            expense_amount_suggestion = cycle_suggestions(possible_amounts, "amount")
+            if expense_amount_suggestion.lower() == "q": # Early quit
                 return None
+            elif expense_amount_suggestion == "exit": # Ignore suggestions
+                expense = read_user_expenses_no_suggestions(database_name, expense_name=expense_name)
+                if not expense:
+                    return None
+                expenses.append(expense)
+                continue
+            else:
+                expense_amount = expense_amount_suggestion
             
             possible_types = list(set([val[3] for val in vals]))
-            expense_type = cycle_suggestions(possible_types, "type")
-            if expense_type.lower() == "q":
+            expense_type_suggestion = cycle_suggestions(possible_types, "type")
+            if expense_type_suggestion.lower() == "q": # Early quit
                 return None
+            elif expense_type_suggestion == "exit": # Ignore suggestions
+                expense = read_user_expenses_no_suggestions(database_name, expense_name=expense_name, \
+                    expense_amount=expense_amount)
+                if not expense:
+                    return None
+                expenses.append(expense)
+                continue
+            else:
+                expense_type = expense_type_suggestion
             
             # For category ids, we need more info since the value is acutally an ID rather than a name that's recognizable to the user.
             possible_category_ids = list(set([val[5] for val in vals]))
-            for possible_category in possible_category_ids:
-                category_table, _ = search_category(database_name, possible_category)
-                print(category_table)
-                cmd = input("Is this the category that this expense belongs to? Press enter to confirm suggestion, \'n\' to see the next suggestion, \'q\' to exit, and anything else to enter a custom entry: ")
-                if cmd.lower() == "":
-                    expense_category = possible_category
-                    break
-                elif cmd.lower() == "n":
-                    continue
-                elif cmd.lower() == "q":
-                    return None
-                else:
-                    expense_category = cmd
-            # NOTE: if the user presses 'n' nonstop here, we'll get an error since no category will be initialized.. Fix!
+            possible_categories = []
+            for possible_category_id in possible_category_ids:
+                _, category_vals = search_category(database_name, possible_category_id)
+                category_name = category_vals[0][1]
+                subcategory_name = category_vals[0][2]
+                possible_categories.append(category_name + " - " + subcategory_name)
+            expense_category_suggestion = cycle_suggestions(possible_categories, "category")
 
-            expense_details = input("Enter any details about the expense (or enter to continue with no details): ")
-            if expense_details.lower() == "q":
+            if expense_category_suggestion.lower() == "q": # Early quit
                 return None
+            elif expense_category_suggestion == "exit": # Ignore suggestions
+                expense = read_user_expenses_no_suggestions(database_name, expense_name=expense_name, \
+                    expense_amount=expense_amount, expense_type=expense_type)
+                if not expense:
+                    return None
+                expenses.append(expense)
+                continue
+            else:
+                expense_category_id = possible_category_ids[possible_categories.index(expense_category_suggestion)]
 
-            # TEMP FIX FOR NOTE ABOVE:
-            try:
-                expenses.append([expense_name, expense_amount, expense_type, expense_details, expense_category])
-            except NameError:
-                print_table(database_name=database_name, table_name="expense_category")
-                expense_category = input("Enter the category id of the expense: ")
-                expenses.append([expense_name, expense_amount, expense_type, expense_details, expense_category])
-                print("Expense recorded.")
+            # Expense details is optional, so empty string is valid. Thus, need to check if we have None or empty string.
+            expense_details = read_expense_details()
+            if expense_details is None:
+                return None
+            
+            expenses.append([expense_name, expense_amount, expense_type, expense_details, expense_category_id])
+            print("Expense recorded.")
 
         else:
-            expense_amount = input("Enter expense amount ($): ")
-            if expense_amount.lower() == "q":
-                return None
-
-            expense_amount = apply_discount_and_tax(expense_amount)
-            if not expense_amount:
-                return None
-
-            expense_type = input("Enter type of expense (want, need, or savings): ")
-            if expense_type.lower() == "q":
-                return None
-
-            expense_details = input("Enter any details about the expense (or enter to continue with no details): ")
-            if expense_details.lower() == "q":
-                return None
-
-            print(f"Select expense category id for {expense_name} (see categories below): ")
-            print_table(database_name, "categories")
-            expense_category_id = input(f"Enter expense category id for {expense_name} or enter \"add\" to add a new expense category for this expense: ")
-            if expense_category_id.lower() == "q":
-                return None
-            if expense_category_id.lower() == "add":
-                expense_category_name = input("Enter new expense category name: ")
-                expense_subcategory = input("Enter expense subcategory name (or enter to continue with no subcategory): ")
-                expense_cat = ExpenseCategory(expense_category_name, expense_subcategory)
-                expense_category_id = expense_cat.insert_into_db(database_name)
-            expenses.append([expense_name, expense_amount, expense_type, expense_details, expense_category_id])
+            expense = read_user_expenses_no_suggestions(database_name)
+            expenses.append(expense)
             print("Expense recorded.")
     return expenses
 
