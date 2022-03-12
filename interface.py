@@ -118,7 +118,7 @@ def apply_discount_and_tax(expense_amount: str) -> str:
 def cycle_suggestions(possible_vals: list, col_name: str) -> str:
     idx = 0
     while True:
-        print(f"Is {possible_vals[idx]} the entry for the column \"{col_name}\" you want to add?")
+        print(f"Is \"{possible_vals[idx]}\" the entry for the column \"{col_name}\" you want to add?")
         print("Press enter to confirm suggestion, \'n\' to see the next suggestion, \'exit\' to exit and ignore suggestions, and anything else to enter a custom entry: ")
         cmd = input("> ")
         if cmd.lower() == "":
@@ -330,9 +330,14 @@ def read_user_expenses(database_name: str) -> list:
             possible_categories = []
             for possible_category_id in possible_category_ids:
                 _, category_vals = search_category(database_name, possible_category_id)
-                category_name = category_vals[0][1]
-                subcategory_name = category_vals[0][2]
-                possible_categories.append(category_name + " - " + subcategory_name)
+                # category_vals is a list instead of a list of tuples since it only ever returns 1 row from table
+                category_name = category_vals[1]
+                subcategory_name = category_vals[2]
+                # NOTE: not sure this works
+                if not subcategory_name:
+                    possible_categories.append(f"{category_name}")
+                else:
+                    possible_categories.append(f"{category_name}-{subcategory_name}")
             expense_category_suggestion = cycle_suggestions(possible_categories, "category")
 
             if expense_category_suggestion.lower() == "q": # Early quit
@@ -356,7 +361,7 @@ def read_user_expenses(database_name: str) -> list:
             print("Expense recorded.")
 
         else:
-            expense = read_user_expenses_no_suggestions(database_name)
+            expense = read_user_expenses_no_suggestions(database_name, expense_name=expense_name)
             expenses.append(expense)
             print("Expense recorded.")
     return expenses
