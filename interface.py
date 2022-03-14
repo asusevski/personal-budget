@@ -387,7 +387,7 @@ def read_user_ledger_entries(database_name: str, receipt_total: float) -> list:
             account = Account(account_name, account_description)
             account_id = account.insert_into_db(database_name)
         
-        print("How much of the receipt did you pay with this payment type?")
+        print("How much of the receipt did you pay with this account?")
         print("Enter payment amount ($): ")
         payment_amount = input("> ")
         if payment_amount.lower() == "q":
