@@ -311,7 +311,7 @@ def read_user_expenses(database_name: str) -> list:
             else:
                 expense_amount = expense_amount_suggestion
             
-            possible_types = list(set([val[3] for val in vals]))
+            possible_types = list(dict.fromkeys([val[3] for val in vals]))
             expense_type_suggestion = cycle_suggestions(possible_types, "type")
             if expense_type_suggestion.lower() == "q": # Early quit
                 return None
@@ -326,7 +326,7 @@ def read_user_expenses(database_name: str) -> list:
                 expense_type = expense_type_suggestion
             
             # For category ids, we need more info since the value is acutally an ID rather than a name that's recognizable to the user.
-            possible_category_ids = list(set([val[5] for val in vals]))
+            possible_category_ids = list(dict.fromkeys([val[5] for val in vals]))
             possible_categories = []
             for possible_category_id in possible_category_ids:
                 _, category_vals = search_category(database_name, possible_category_id)
