@@ -1,6 +1,6 @@
 from categories import ExpenseCategory, Account
 from interface import find_db, read_incometransaction_from_user, read_transaction_from_user
-from manage_database import delete_row, initialize_empty_db, print_table
+from manage_database import delete_row, initialize_empty_db, print_table, query_db
 import sys
 
 
@@ -22,7 +22,8 @@ def main():
 3. Insert incomes in incomes table
 4. Print a table
 5. Delete a row from a table
-6. Exit
+6. Execute an SQL Query
+7. Exit
 
         """)
         print("Enter your choice: ")
@@ -134,8 +135,20 @@ want to have the category be listed as \'groceries\' and the subcategory be \'ch
             delete_row(database_name, table_name, row_id)
             print("Row deleted.")
 
-        # Quit
         if choice == "6":
+            database_name = find_db()
+            if not database_name:
+                print("No database found. Please intialize a database first.")
+                continue
+
+            print("Enter SQL query: ")
+            sql_query = input("> ")
+            print("Executing query...")
+            vals = query_db(database_name, sql_query)
+            print(f"Results: {vals}")
+
+        # Quit
+        if choice == "7":
             sys.exit()
 
 
