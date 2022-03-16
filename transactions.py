@@ -70,6 +70,7 @@ class Transaction:
                 c.execute("commit")
             except sqlite3.OperationalError as e:
                 c.execute("rollback")
+                return e
                 
 
 @dataclass
@@ -124,7 +125,7 @@ class IncomeTransaction:
                     c.execute(f"""INSERT INTO incomes ({income_cols}) VALUES ({income_vals})""")
                 for ledger_entry in self.ledger_entries:
                     ledger_cols = list(ledger_entry.__dict__.keys())
-                    ledger_cols = ", ".join(str(i) if i != "receipt" else "receipt_id" for i in ledger_cols)
+                    ledger_cols = ", ".join(str(i) if i != "paystub" else "paystub_id" for i in ledger_cols)
                     ledger_vals = list(ledger_entry.__dict__.values())
                     ledger_vals = [ledger_vals[0]] + [paystub_id] + [ledger_vals[2]]
                     ledger_vals = ", ".join("\'" + str(i) + "\'" for i in ledger_vals)
@@ -133,3 +134,4 @@ class IncomeTransaction:
                 c.execute("commit")
             except sqlite3.OperationalError as e:
                 c.execute("rollback")
+                return e

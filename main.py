@@ -91,8 +91,11 @@ want to have the category be listed as \'groceries\' and the subcategory be \'ch
                     break
                 else:
                     # Insert transaction into database
-                    transaction.execute(database_name)
-                    print("Transaction added to database.")
+                    retval = transaction.execute(database_name)
+                    if not retval:
+                        print("Transaction added to database.")
+                    else:
+                        print(f"Transaction failed to be added. Error message: {retval}")
 
         if choice == "3":
             database_name = find_db()
@@ -108,14 +111,30 @@ want to have the category be listed as \'groceries\' and the subcategory be \'ch
                     break
                 else:
                     # Insert transaction into database
-                    income_transaction.execute(database_name)
-                    print("Transaction added.")
+                    retval = income_transaction.execute(database_name)
+                    if not retval:
+                        print("Income transaction added.")
+                    else:
+                        print(f"Income transaction failed to be added. Error message: {retval}")
         
         if choice == "4":
             database_name = find_db()
             if not database_name:
                 print("No database found. Please intialize a database first.")
                 continue
+
+            print("""Table Names in database: 
+            
+1. accounts
+2. categories
+3. expenses
+4. receipts
+5. ledger
+6. incomes
+7. paystubs
+8. paystub_ledger
+
+            """)
             
             print("Enter table name to print: ")
             table_name = input("> ")

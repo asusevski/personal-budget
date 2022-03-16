@@ -548,8 +548,8 @@ def read_user_paystub_ledger_entries(database_name: str, paystub_total: float) -
             payment_type = Account(account_name, account_description)
             account_id = payment_type.insert_into_db(database_name)
         
-        print("How much of the receipt did you pay with this payment type?")
-        print("Enter payment amount ($): ")
+        print("How much of the total is being credited to this account?")
+        print("Enter credit amount ($): ")
         income_amount = input("> ")
         if income_amount.lower() == "q":
             return None
@@ -574,14 +574,15 @@ def read_incometransaction_from_user(database_name: str) -> Transaction:
     if not paystub_user_data:
         return None
 
-    income_user_data = read_user_incomes(database_name)
+    income_user_data = read_user_incomes()
     if not income_user_data:
         return None
 
     # Calculate paystub total:
     paystub_total = 0
     for income in income_user_data:
-        amount = float(income[1])
+        print(income)
+        amount = float(income[0])
         paystub_total += amount
     
     paystub_ledger_entries_user_data = read_user_paystub_ledger_entries(database_name, paystub_total)
