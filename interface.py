@@ -84,16 +84,8 @@ def read_user_receipt() -> list:
     return [receipt_date, receipt_location]
 
 
-def apply_discount_and_tax(expense_amount: str) -> str:
+def apply_tax(expense_amount: str) -> str:
     expense_amount = float(expense_amount)
-    # Check if expense has a discount to apply
-    print("Enter any discount amount as a % (or enter to continue with no discount): ")
-    discount = input("> ")
-    if discount.lower() == "q":
-        return None
-    if discount != "":
-        discount = float(discount)
-        expense_amount = expense_amount * (1 - (discount/100))
 
     # Check if expense is taxable:
     print("Is this expense taxable? (y/n): ")
@@ -147,7 +139,7 @@ def read_expense_amount() -> str:
     if expense_amount.lower() == "q":
         return None
 
-    expense_amount = apply_discount_and_tax(expense_amount)
+    expense_amount = apply_tax(expense_amount)
     if not expense_amount:
         return None
 
