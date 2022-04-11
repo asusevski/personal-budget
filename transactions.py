@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from expenses import Expense, LedgerEntry, Receipt
 from manage_database import create_connection
@@ -5,8 +6,14 @@ from incomes import Income, Paystub, PaystubLedger
 import sqlite3
 
 
+class Transaction(ABC):
+    @abstractmethod
+    def execute(self, database_name: str) -> str:
+        pass
+
+
 @dataclass
-class Transaction:
+class ExpenseTransaction(Transaction):
     """
     A transaction in the context of this program is comprised of one receipt, one or more expenses, 
     and one or more ledger entries. A transaction being comprised of one or more expenses reflects 
@@ -74,7 +81,7 @@ class Transaction:
                 
 
 @dataclass
-class IncomeTransaction:
+class IncomeTransaction(Transaction):
     """
     An income transaction is a transaction that is comprised of one paystub, one or more income events, 
     and one or more ledger entries. Note that by far, there will almost always be one income event and

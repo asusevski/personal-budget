@@ -4,14 +4,14 @@ from incomes import Income, Paystub, PaystubLedger
 from manage_database import print_table, search_category, search_expense
 import os
 import re
-from transactions import IncomeTransaction, Transaction
+from transactions import ExpenseTransaction, IncomeTransaction
 
 
 # CONSTANTS
 HST_TAX_RATE = 0.13
 
 
-def find_db() -> str:
+def _find_db() -> str:
     """
     Finds and returns the name of the database to use.
 
@@ -27,7 +27,7 @@ def find_db() -> str:
         return ""
     else:
         return matches[0]
-
+        
 
 def read_expense_category_from_user() -> ExpenseCategory:
     """
@@ -390,15 +390,15 @@ def read_user_ledger_entries(database_name: str, receipt_total: float) -> list:
     return ledger_entries
 
 
-def read_transaction_from_user(database_name: str) -> Transaction:
+def read_expense_transaction_from_user(database_name: str) -> ExpenseTransaction:
     """
-    Reads a transaction from the user.
+    Reads an expense transaction from the user.
 
     Arguments:
         database_name: The name of the database to use.
 
     Returns:
-        A Transaction object or None if the user ends input early with 'q' input.
+        A ExpenseTransaction object or None if the user ends input early with 'q' input.
 
     """
     receipt_user_data = read_user_receipt()
@@ -442,8 +442,8 @@ def read_transaction_from_user(database_name: str) -> Transaction:
         ledger_entry = LedgerEntry(amount=payment_amount, receipt=receipt, account_id=account_id)
         ledger_entries.append(ledger_entry)
 
-    transaction = Transaction(receipt=receipt, expenses=expenses, ledger_entries=ledger_entries)
-    return transaction
+    expense_transaction = ExpenseTransaction(receipt=receipt, expenses=expenses, ledger_entries=ledger_entries)
+    return expense_transaction
 
 
 def read_user_paystub() -> list:
@@ -551,7 +551,7 @@ def read_user_paystub_ledger_entries(database_name: str, paystub_total: float) -
     return paystub_entries
 
 
-def read_incometransaction_from_user(database_name: str) -> Transaction:
+def read_income_transaction_from_user(database_name: str) -> IncomeTransaction:
     """
     Reads an income transaction from the user.
 

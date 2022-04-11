@@ -1,5 +1,5 @@
 from categories import ExpenseCategory, Account
-from interface import find_db, read_incometransaction_from_user, read_transaction_from_user
+from interface import _find_db, read_income_transaction_from_user, read_expense_transaction_from_user
 from manage_database import delete_row, initialize_empty_db, print_table, query_db
 import sys
 
@@ -10,8 +10,11 @@ def main():
 
     User can:
         - Initialize basic tables in a budget database
-        - Create table in database
         - Insert expenses into expenses table
+        - Insert income into income table
+        - Print a table
+        - Delete a row from a table
+        - Execute an arbitrary sql query
 
     """
     while True:
@@ -78,34 +81,34 @@ want to have the category be listed as \'groceries\' and the subcategory be \'ch
                 expense_category.insert_into_db(database_name)
 
         if choice == "2":
-            database_name = find_db()
+            database_name = _find_db()
             if not database_name:
                 print("No database found. Please intialize a database first.")
                 continue
 
             print("Enter q at any time to stop entering transactions.")
             while True:
-                transaction = read_transaction_from_user(database_name)
-                if not transaction:
+                expense_transaction = read_expense_transaction_from_user(database_name)
+                if not expense_transaction:
                     print("Transaction cancelled.")
                     break
                 else:
                     # Insert transaction into database
-                    retval = transaction.execute(database_name)
+                    retval = expense_transaction.execute(database_name)
                     if not retval:
                         print("Transaction added to database.")
                     else:
                         print(f"Transaction failed to be added. Error message: {retval}")
 
         if choice == "3":
-            database_name = find_db()
+            database_name = _find_db()
             if not database_name:
                 print("No database found. Please intialize a database first.")
                 continue
 
             print("Enter q at any time to stop entering income transactions.")
             while True:
-                income_transaction = read_incometransaction_from_user(database_name)
+                income_transaction = read_income_transaction_from_user(database_name)
                 if not income_transaction:
                     print("Transaction cancelled.")
                     break
@@ -118,7 +121,7 @@ want to have the category be listed as \'groceries\' and the subcategory be \'ch
                         print(f"Income transaction failed to be added. Error message: {retval}")
         
         if choice == "4":
-            database_name = find_db()
+            database_name = _find_db()
             if not database_name:
                 print("No database found. Please intialize a database first.")
                 continue
@@ -141,7 +144,7 @@ want to have the category be listed as \'groceries\' and the subcategory be \'ch
             print_table(database_name, table_name)
 
         if choice == "5":
-            database_name = find_db()
+            database_name = _find_db()
             if not database_name:
                 print("No database found. Please intialize a database first.")
                 continue
@@ -155,7 +158,7 @@ want to have the category be listed as \'groceries\' and the subcategory be \'ch
             print("Row deleted.")
 
         if choice == "6":
-            database_name = find_db()
+            database_name = _find_db()
             if not database_name:
                 print("No database found. Please intialize a database first.")
                 continue
