@@ -222,8 +222,6 @@ def search_expense(database_name: str, expense_item: str)-> Tuple[PrettyTable, l
             FROM receipts INNER JOIN (SELECT * FROM expenses e1 WHERE NOT EXISTS \
                 (SELECT * FROM expenses e2 WHERE e1.item = e2.item and e2.id < e1.id)) e ON receipts.id = e.receipt_id\
             WHERE JulianDay('now') - JulianDay(date) <= 365")
-        #c.execute(f"SELECT expenses.id, item, amount, type, receipt_id, category_id, details \
-        #    FROM expenses INNER JOIN receipts ON expenses.receipt_id=receipts.id WHERE JulianDay('now') - JulianDay(date) <= 365")
         rows = c.fetchall()
         names = [row[1] for row in rows]
         ratios = [(idx, fuzz.partial_ratio(name.lower(), expense_item)) for idx, name in enumerate(names)]

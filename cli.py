@@ -1,13 +1,14 @@
 from categories import Account, ExpenseCategory
-from expenses import Expense, LedgerEntry, Receipt
-from incomes import Income, Paystub, PaystubLedger
+#from expenses import Expense, LedgerEntry, Receipt
+#from incomes import Income, Paystub, PaystubLedger
 from manage_database import delete_row, initialize_empty_db, print_table, query_db
-import os
-import re
+from menu import Menu
+#import os
+#import re
 import sys
-from transactions import ExpenseTransaction, IncomeTransaction
+#from transactions import ExpenseTransaction, IncomeTransaction
 
-from cli_helpers import _find_db, _read_user_receipt, _read_user_expenses, _read_user_ledger_entries, read_expense_transaction_from_user
+from cli_helpers import _find_db, _read_expense_transaction_from_user, _read_income_transaction_from_user
 
 
 
@@ -60,14 +61,14 @@ want to have the category be listed as \'groceries\' and the subcategory be \'ch
             expense_category = ExpenseCategory(category_name, subcategory)
             expense_category.insert_into_db(database_name)
 
-    def insert_expense_transactions(self, database_name: str) -> None:
+    def insert_expense_transactions(self) -> None:
         database_name = _find_db()
         if not database_name:
             print("No database found. Please intialize a database first.")
 
         print("Enter q at any time to stop entering transactions.")
         while True:
-            expense_transaction = read_expense_transaction_from_user(database_name)
+            expense_transaction = _read_expense_transaction_from_user(database_name)
             if not expense_transaction:
                 print("Transaction cancelled.")
                 break
@@ -78,6 +79,55 @@ want to have the category be listed as \'groceries\' and the subcategory be \'ch
                     print("Transaction added to database.")
                 else:
                     print(f"Transaction failed to be added. Error message: {retval}")
+
+    def insert_income_transactions(self) -> None:
+        database_name = _find_db()
+        if not database_name:
+            print("No database found. Please intialize a database first.")
+
+        print("Enter q at any time to stop entering income transactions.")
+        while True:
+            income_transaction = _read_income_transaction_from_user(database_name)
+            if not income_transaction:
+                print("Transaction cancelled.")
+                break
+            else:
+                # Insert transaction into database
+                retval = income_transaction.execute(database_name)
+                if not retval:
+                    print("Income transaction added.")
+                else:
+                    print(f"Income transaction failed to be added. Error message: {retval}")
     
+    def print_table(self, menu: Menu) -> None:
+        database_name = _find_db()
+        if not database_name:
+            print("No database found. Please intialize a database first.")
+
+        table_name = menu.run()
+
+        print_table(database_name, table_name)
+
+    def delete_row(self, menu: Menu) -> None:
+        database_name = _find_db()
+        if not database_name:
+            print("No database found. Please intialize a database first.")
+
+        table_name, row_id = menu.run(database_name)
+
+        delete_row(database_name, table_name, row_id)
+        print("Row deleted.")
+
+    def execute_sql_query(self) -> None:
+        database_name = _find_db()
+        if not database_name:
+            print("No database found. Please intialize a database first.")
+
+        print("Enter SQL query: ")
+        sql_query = input("> ")
+        print("Executing query...")
+        vals = query_db(database_name, sql_query)
+        print(f"Results: {vals}")
+
     def exit(self) -> None:
         sys.exit(0)

@@ -4,7 +4,7 @@ from incomes import Income, Paystub, PaystubLedger
 from manage_database import print_table, search_category, search_expense
 import os
 import re
-from transactions import IncomeTransaction, Transaction
+from transactions import IncomeTransaction, ExpenseTransaction
 
 
 # CONSTANTS
@@ -390,7 +390,7 @@ def _read_user_ledger_entries(database_name: str, receipt_total: float) -> list:
     return ledger_entries
 
 
-def _read_transaction_from_user(database_name: str) -> Transaction:
+def _read_expense_transaction_from_user(database_name: str) -> ExpenseTransaction:
     """
     Reads a transaction from the user.
 
@@ -442,7 +442,7 @@ def _read_transaction_from_user(database_name: str) -> Transaction:
         ledger_entry = LedgerEntry(amount=payment_amount, receipt=receipt, account_id=account_id)
         ledger_entries.append(ledger_entry)
 
-    transaction = Transaction(receipt=receipt, expenses=expenses, ledger_entries=ledger_entries)
+    transaction = ExpenseTransaction(receipt=receipt, expenses=expenses, ledger_entries=ledger_entries)
     return transaction
 
 
@@ -551,7 +551,7 @@ def _read_user_paystub_ledger_entries(database_name: str, paystub_total: float) 
     return paystub_entries
 
 
-def _read_incometransaction_from_user(database_name: str) -> Transaction:
+def _read_income_transaction_from_user(database_name: str) -> IncomeTransaction:
     """
     Reads an income transaction from the user.
 
