@@ -1,7 +1,4 @@
-from typing import Protocol
-
-
-class CLI(Protocol):
+class CLI():
     def _read_db_name(self) -> str:
         print("Enter database name (default name is budget): ")
         database_name = input("> ")

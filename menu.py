@@ -1,18 +1,18 @@
-from typing import Protocol
+from typing import Any, Protocol
 
 
 class Menu(Protocol):
-    def _print_menu(self) -> None:
-        pass
+    def print_menu(self) -> None:
+        ...
     
-    def _read_choice(self) -> int:
-        pass
+    def read_choice(self) -> Any:
+        ...
     
-    def _handle_choice(self, choice: int) -> None:
-        pass
+    def handle_choice(self, choice: int) -> Any:
+        ...
     
-    def run(self) -> None:
-        self._print_menu()
-        choice = self._read_choice()
-        self._handle_choice(choice)
+    def run(self) -> Any:
+        self.print_menu()
+        choice = self.read_choice()
+        self.handle_choice(choice)
 
