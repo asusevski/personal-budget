@@ -7,79 +7,8 @@ import re
 import sys
 from transactions import ExpenseTransaction, IncomeTransaction
 
+from cli_helpers import _find_db, _read_user_receipt, _read_user_expenses, _read_user_ledger_entries, read_expense_transaction_from_user
 
-def _find_db() -> str:
-    """
-    Finds and returns the name of the database to use.
-
-    A database must end in '.db' or '.sqlite3' and must be in the same directory as this file.
-
-    Returns:
-        The name of the database to use (or the empty string if no database is found).
-    """
-    db_regex = re.compile(r'(.*)(\.db|\.sqlite3)$')
-    files = sorted(os.listdir('.'))
-    matches = list(filter(lambda x: db_regex.match(x), files))
-    if len(matches) == 0:
-        return ""
-    else:
-        return matches[0]
-
-
-def read_expense_transaction_from_user(database_name: str) -> ExpenseTransaction:
-    """
-    Reads an expense transaction from the user.
-
-    Arguments:
-        database_name: The name of the database to use.
-
-    Returns:
-        A ExpenseTransaction object or None if the user ends input early with 'q' input.
-
-    """
-    receipt_user_data = read_user_receipt()
-    if not receipt_user_data:
-        return None
-
-    expense_user_data = read_user_expenses(database_name)
-    if not expense_user_data:
-        return None
-
-    # Calculate receipt total:
-    receipt_total = 0
-    for expense in expense_user_data:
-        amount = float(expense[1])
-        receipt_total += amount
-    
-    ledger_entries_user_data = read_user_ledger_entries(database_name, receipt_total)
-    if not ledger_entries_user_data:
-        return None
-    
-    receipt_date = receipt_user_data[0]
-    receipt_location = receipt_user_data[1]
-
-    receipt = Receipt(total="{:.2f}".format(receipt_total), date=receipt_date, location=receipt_location)
-
-    expenses = []
-    for exp in expense_user_data:
-        expense_name = exp[0]
-        expense_amount = exp[1]
-        expense_type = exp[2]
-        expense_details = exp[3]
-        expense_category = exp[4]
-        expense = Expense(item=expense_name, amount=expense_amount, type=expense_type,\
-                          details=expense_details, receipt=receipt, category_id=expense_category)
-        expenses.append(expense)
-    
-    ledger_entries = []
-    for ledger_entry in ledger_entries_user_data:
-        payment_amount = ledger_entry[0]
-        account_id = ledger_entry[1]
-        ledger_entry = LedgerEntry(amount=payment_amount, receipt=receipt, account_id=account_id)
-        ledger_entries.append(ledger_entry)
-
-    expense_transaction = ExpenseTransaction(receipt=receipt, expenses=expenses, ledger_entries=ledger_entries)
-    return expense_transaction
 
 
 class CLI():

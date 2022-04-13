@@ -4,17 +4,32 @@ from incomes import Income, Paystub, PaystubLedger
 from manage_database import print_table, search_category, search_expense
 import os
 import re
-from transactions import ExpenseTransaction, IncomeTransaction
+from transactions import IncomeTransaction, Transaction
 
 
 # CONSTANTS
 HST_TAX_RATE = 0.13
 
 
+def _find_db() -> str:
+    """
+    Finds and returns the name of the database to use.
 
-        
+    A database must end in '.db' or '.sqlite3' and must be in the same directory as this file.
 
-def read_expense_category_from_user() -> ExpenseCategory:
+    Returns:
+        The name of the database to use (or the empty string if no database is found).
+    """
+    db_regex = re.compile(r'(.*)(\.db|\.sqlite3)$')
+    files = sorted(os.listdir('.'))
+    matches = list(filter(lambda x: db_regex.match(x), files))
+    if len(matches) == 0:
+        return ""
+    else:
+        return matches[0]
+
+
+def _read_expense_category_from_user() -> ExpenseCategory:
     """
     Reads an expense category from the user.
 
@@ -29,7 +44,7 @@ def read_expense_category_from_user() -> ExpenseCategory:
     return expense_category
 
 
-def read_account_from_user() -> Account:
+def _read_account_from_user() -> Account:
     """
     Reads a payment type from the user.
 
@@ -44,7 +59,7 @@ def read_account_from_user() -> Account:
     return account
 
 
-def read_user_receipt() -> list:
+def _read_user_receipt() -> list:
     """
     Reads all data required from user to initialize a receipt object.
 
@@ -69,7 +84,7 @@ def read_user_receipt() -> list:
     return [receipt_date, receipt_location]
 
 
-def apply_tax(expense_amount: str) -> str:
+def _apply_tax(expense_amount: str) -> str:
     expense_amount = float(expense_amount)
 
     # Check if expense is taxable:
@@ -92,7 +107,7 @@ def apply_tax(expense_amount: str) -> str:
     return "{:.2f}".format(expense_amount)
 
 
-def cycle_suggestions(possible_vals: list, col_name: str) -> str:
+def _cycle_suggestions(possible_vals: list, col_name: str) -> str:
     idx = 0
     while True:
         print(f"Is \"{possible_vals[idx]}\" the entry for the column \"{col_name}\" you want to add?")
@@ -108,7 +123,7 @@ def cycle_suggestions(possible_vals: list, col_name: str) -> str:
             return cmd
 
 
-def read_expense_name() -> str:
+def _read_expense_name() -> str:
     print("Enter expense name (enter nothing or \"done\" if done entering expenses): ")
     expense_name = input("> ")
     if expense_name.lower() == "q":
@@ -118,20 +133,20 @@ def read_expense_name() -> str:
     return expense_name
 
 
-def read_expense_amount() -> str:
+def _read_expense_amount() -> str:
     print("Enter expense amount ($): ")
     expense_amount = input("> ")
     if expense_amount.lower() == "q":
         return None
 
-    expense_amount = apply_tax(expense_amount)
+    expense_amount = _apply_tax(expense_amount)
     if not expense_amount:
         return None
 
     return expense_amount
 
 
-def read_expense_type() -> str:
+def _read_expense_type() -> str:
     print("Enter type of expense (want, need, or savings): ")
     expense_type = input("> ")
     if expense_type.lower() == "q":
@@ -139,7 +154,7 @@ def read_expense_type() -> str:
     return expense_type
 
 
-def read_expense_details() -> str:
+def _read_expense_details() -> str:
     print("Enter any details about the expense (or enter to continue with no details): ")
     expense_details = input("> ")
     if expense_details.lower() == "q":
@@ -147,7 +162,7 @@ def read_expense_details() -> str:
     return expense_details
 
 
-def read_expense_category(database_name: str, expense_name: str) -> str:
+def _read_expense_category(database_name: str, expense_name: str) -> str:
     print(f"Select expense category id for {expense_name} (see categories below): ")
     print_table(database_name, "categories")
     print(f"Enter expense category id for {expense_name} or enter \"add\" to add a new expense category for this expense: ")
@@ -164,7 +179,7 @@ def read_expense_category(database_name: str, expense_name: str) -> str:
     return expense_category_id
 
 
-def read_user_expenses_no_suggestions(database_name: str, **kwargs) -> list:
+def _read_user_expenses_no_suggestions(database_name: str, **kwargs) -> list:
     """
     Reads all data required from user to initialize an expense object.
 
@@ -186,7 +201,7 @@ def read_user_expenses_no_suggestions(database_name: str, **kwargs) -> list:
     """
     expense = []
     if "expense_name" not in kwargs:
-        expense_name = read_expense_name()
+        expense_name = _read_expense_name()
         if not expense_name or expense_name == "done":
             return None
         expense.append(expense_name)
@@ -194,7 +209,7 @@ def read_user_expenses_no_suggestions(database_name: str, **kwargs) -> list:
         expense.append(kwargs["expense_name"])
 
     if "expense_amount" not in kwargs:
-        expense_amount = read_expense_amount()
+        expense_amount = _read_expense_amount()
         if not expense_amount:
             return None
         expense.append(expense_amount)
@@ -202,7 +217,7 @@ def read_user_expenses_no_suggestions(database_name: str, **kwargs) -> list:
         expense.append(kwargs["expense_amount"])
 
     if "expense_type" not in kwargs:
-        expense_type = read_expense_type()
+        expense_type = _read_expense_type()
         if not expense_type:
             return None
         expense.append(expense_type)
@@ -210,7 +225,7 @@ def read_user_expenses_no_suggestions(database_name: str, **kwargs) -> list:
         expense.append(kwargs["expense_type"])
 
     if "expense_details" not in kwargs:
-        expense_details = read_expense_details()
+        expense_details = _read_expense_details()
         # Expense details is optional, so empty string is valid. Thus, need to check if we have None or empty string.
         if expense_details is None:
             return None
@@ -220,7 +235,7 @@ def read_user_expenses_no_suggestions(database_name: str, **kwargs) -> list:
 
     if "expense_category_id" not in kwargs:
         # It's possible there's no local variable expense_name, so we just grab it from the expense list.
-        expense_category_id = read_expense_category(database_name, expense[0])
+        expense_category_id = _read_expense_category(database_name, expense[0])
         if not expense_category_id:
             return None
         expense.append(expense_category_id)
@@ -230,7 +245,7 @@ def read_user_expenses_no_suggestions(database_name: str, **kwargs) -> list:
     return expense
 
 
-def read_user_expenses(database_name: str) -> list:
+def _read_user_expenses(database_name: str) -> list:
     """
     Reads all data required from user to initialize an expense object.
 
@@ -251,7 +266,7 @@ def read_user_expenses(database_name: str) -> list:
     """
     expenses = []
     while True:
-        expense_name = read_expense_name()
+        expense_name = _read_expense_name()
         if not expense_name:
             return None
         if expense_name == "done":
@@ -262,11 +277,11 @@ def read_user_expenses(database_name: str) -> list:
         if vals:
             print("We found an existing entry with a similar name.")
             possible_item_names = [val[1] for val in vals]
-            expense_name_suggestion = cycle_suggestions(possible_item_names, "expense_name")
+            expense_name_suggestion = _cycle_suggestions(possible_item_names, "expense_name")
             if expense_name_suggestion.lower() == "q": # Early quit
                 return None
             elif expense_name_suggestion == "exit": # Ignore suggestions
-                expense = read_user_expenses_no_suggestions(database_name, expense_name=expense_name)
+                expense = _read_user_expenses_no_suggestions(database_name, expense_name=expense_name)
                 if not expense:
                     return None
                 expenses.append(expense)
@@ -276,11 +291,11 @@ def read_user_expenses(database_name: str) -> list:
             
 
             possible_amounts = [val[2] for val in vals]
-            expense_amount_suggestion = cycle_suggestions(possible_amounts, "amount")
+            expense_amount_suggestion = _cycle_suggestions(possible_amounts, "amount")
             if expense_amount_suggestion.lower() == "q": # Early quit
                 return None
             elif expense_amount_suggestion == "exit": # Ignore suggestions
-                expense = read_user_expenses_no_suggestions(database_name, expense_name=expense_name)
+                expense = _read_user_expenses_no_suggestions(database_name, expense_name=expense_name)
                 if not expense:
                     return None
                 expenses.append(expense)
@@ -289,11 +304,11 @@ def read_user_expenses(database_name: str) -> list:
                 expense_amount = expense_amount_suggestion
             
             possible_types = list(dict.fromkeys([val[3] for val in vals]))
-            expense_type_suggestion = cycle_suggestions(possible_types, "type")
+            expense_type_suggestion = _cycle_suggestions(possible_types, "type")
             if expense_type_suggestion.lower() == "q": # Early quit
                 return None
             elif expense_type_suggestion == "exit": # Ignore suggestions
-                expense = read_user_expenses_no_suggestions(database_name, expense_name=expense_name, \
+                expense = _read_user_expenses_no_suggestions(database_name, expense_name=expense_name, \
                     expense_amount=expense_amount)
                 if not expense:
                     return None
@@ -315,12 +330,12 @@ def read_user_expenses(database_name: str) -> list:
                     possible_categories.append(f"{category_name}")
                 else:
                     possible_categories.append(f"{category_name}-{subcategory_name}")
-            expense_category_suggestion = cycle_suggestions(possible_categories, "category")
+            expense_category_suggestion = _cycle_suggestions(possible_categories, "category")
 
             if expense_category_suggestion.lower() == "q": # Early quit
                 return None
             elif expense_category_suggestion == "exit": # Ignore suggestions
-                expense = read_user_expenses_no_suggestions(database_name, expense_name=expense_name, \
+                expense = _read_user_expenses_no_suggestions(database_name, expense_name=expense_name, \
                     expense_amount=expense_amount, expense_type=expense_type)
                 if not expense:
                     return None
@@ -330,7 +345,7 @@ def read_user_expenses(database_name: str) -> list:
                 expense_category_id = possible_category_ids[possible_categories.index(expense_category_suggestion)]
 
             # Expense details is optional, so empty string is valid. Thus, need to check if we have None or empty string.
-            expense_details = read_expense_details()
+            expense_details = _read_expense_details()
             if expense_details is None:
                 return None
             
@@ -338,13 +353,13 @@ def read_user_expenses(database_name: str) -> list:
             print("Expense recorded.")
 
         else:
-            expense = read_user_expenses_no_suggestions(database_name, expense_name=expense_name)
+            expense = _read_user_expenses_no_suggestions(database_name, expense_name=expense_name)
             expenses.append(expense)
             print("Expense recorded.")
     return expenses
 
 
-def read_user_ledger_entries(database_name: str, receipt_total: float) -> list:
+def _read_user_ledger_entries(database_name: str, receipt_total: float) -> list:
     print("How did you pay?")
     tol = 10e-4
     ledger_entries = []
@@ -375,22 +390,22 @@ def read_user_ledger_entries(database_name: str, receipt_total: float) -> list:
     return ledger_entries
 
 
-def read_expense_transaction_from_user(database_name: str) -> ExpenseTransaction:
+def _read_transaction_from_user(database_name: str) -> Transaction:
     """
-    Reads an expense transaction from the user.
+    Reads a transaction from the user.
 
     Arguments:
         database_name: The name of the database to use.
 
     Returns:
-        A ExpenseTransaction object or None if the user ends input early with 'q' input.
+        A Transaction object or None if the user ends input early with 'q' input.
 
     """
-    receipt_user_data = read_user_receipt()
+    receipt_user_data = _read_user_receipt()
     if not receipt_user_data:
         return None
 
-    expense_user_data = read_user_expenses(database_name)
+    expense_user_data = _read_user_expenses(database_name)
     if not expense_user_data:
         return None
 
@@ -400,7 +415,7 @@ def read_expense_transaction_from_user(database_name: str) -> ExpenseTransaction
         amount = float(expense[1])
         receipt_total += amount
     
-    ledger_entries_user_data = read_user_ledger_entries(database_name, receipt_total)
+    ledger_entries_user_data = _read_user_ledger_entries(database_name, receipt_total)
     if not ledger_entries_user_data:
         return None
     
@@ -427,11 +442,11 @@ def read_expense_transaction_from_user(database_name: str) -> ExpenseTransaction
         ledger_entry = LedgerEntry(amount=payment_amount, receipt=receipt, account_id=account_id)
         ledger_entries.append(ledger_entry)
 
-    expense_transaction = ExpenseTransaction(receipt=receipt, expenses=expenses, ledger_entries=ledger_entries)
-    return expense_transaction
+    transaction = Transaction(receipt=receipt, expenses=expenses, ledger_entries=ledger_entries)
+    return transaction
 
 
-def read_user_paystub() -> list:
+def _read_user_paystub() -> list:
     """
     Reads all data required from user to initialize a paystub object.
 
@@ -456,7 +471,7 @@ def read_user_paystub() -> list:
     return [paystub_date, paystub_payer]
 
 
-def read_user_incomes() -> list:
+def _read_user_incomes() -> list:
     """
     Reads all data required from user to initialize an income object.
 
@@ -490,7 +505,7 @@ def read_user_incomes() -> list:
     return incomes
 
 
-def read_user_paystub_ledger_entries(database_name: str, paystub_total: float) -> list:
+def _read_user_paystub_ledger_entries(database_name: str, paystub_total: float) -> list:
     """
     Reads all data required from user to initialize a paystub_entry object.
 
@@ -536,7 +551,7 @@ def read_user_paystub_ledger_entries(database_name: str, paystub_total: float) -
     return paystub_entries
 
 
-def read_income_transaction_from_user(database_name: str) -> IncomeTransaction:
+def _read_incometransaction_from_user(database_name: str) -> Transaction:
     """
     Reads an income transaction from the user.
 
@@ -547,11 +562,11 @@ def read_income_transaction_from_user(database_name: str) -> IncomeTransaction:
         An IncomeTransaction object or None if the user ends input early with 'q' input.
 
     """
-    paystub_user_data = read_user_paystub()
+    paystub_user_data = _read_user_paystub()
     if not paystub_user_data:
         return None
 
-    income_user_data = read_user_incomes()
+    income_user_data = _read_user_incomes()
     if not income_user_data:
         return None
 
@@ -562,7 +577,7 @@ def read_income_transaction_from_user(database_name: str) -> IncomeTransaction:
         amount = float(income[0])
         paystub_total += amount
     
-    paystub_ledger_entries_user_data = read_user_paystub_ledger_entries(database_name, paystub_total)
+    paystub_ledger_entries_user_data = _read_user_paystub_ledger_entries(database_name, paystub_total)
     if not paystub_ledger_entries_user_data:
         return None
     
@@ -587,3 +602,4 @@ def read_income_transaction_from_user(database_name: str) -> IncomeTransaction:
 
     transaction = IncomeTransaction(paystub=paystub, income_events=incomes, ledger_entries=paystub_ledger_entries)
     return transaction
+    
