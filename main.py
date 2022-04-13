@@ -22,7 +22,8 @@ def main():
     main_menu = MainMenu(options=main_menu_options)
     table_menu = TableMenu(options=table_options)
     index_menu = IndexMenu(options=table_options)
-    Program(CLI(), main_menu, table_menu, index_menu).run()
+    cli = CLI()
+    Program(cli, main_menu, table_menu, index_menu).run()
 
 
 if __name__ == "__main__":

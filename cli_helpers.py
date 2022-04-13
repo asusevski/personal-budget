@@ -421,8 +421,7 @@ def _read_expense_transaction_from_user(database_name: str) -> ExpenseTransactio
     
     receipt_date = receipt_user_data[0]
     receipt_location = receipt_user_data[1]
-
-    receipt = Receipt(total="{:.2f}".format(receipt_total), date=receipt_date, location=receipt_location)
+    receipt = Receipt(total=f"{receipt_total:.2f}", date=receipt_date, location=receipt_location)
 
     expenses = []
     for exp in expense_user_data:
@@ -431,7 +430,8 @@ def _read_expense_transaction_from_user(database_name: str) -> ExpenseTransactio
         expense_type = exp[2]
         expense_details = exp[3]
         expense_category = exp[4]
-        expense = Expense(item=expense_name, amount=expense_amount, type=expense_type,\
+        # added float typecast to ensure that we get 2 decimal places for now. this is a temporary fix.
+        expense = Expense(item=expense_name, amount=f"{float(expense_amount):.2f}", type=expense_type,\
                           details=expense_details, receipt=receipt, category_id=expense_category)
         expenses.append(expense)
     
@@ -439,7 +439,8 @@ def _read_expense_transaction_from_user(database_name: str) -> ExpenseTransactio
     for ledger_entry in ledger_entries_user_data:
         payment_amount = ledger_entry[0]
         account_id = ledger_entry[1]
-        ledger_entry = LedgerEntry(amount=payment_amount, receipt=receipt, account_id=account_id)
+        # added float typecast to ensure that we get 2 decimal places for now. this is a temporary fix.
+        ledger_entry = LedgerEntry(amount=f"{float(payment_amount):.2f}", receipt=receipt, account_id=account_id)
         ledger_entries.append(ledger_entry)
 
     transaction = ExpenseTransaction(receipt=receipt, expenses=expenses, ledger_entries=ledger_entries)

@@ -1,13 +1,7 @@
 from categories import Account, ExpenseCategory
-#from expenses import Expense, LedgerEntry, Receipt
-#from incomes import Income, Paystub, PaystubLedger
 from manage_database import delete_row, initialize_empty_db, print_table, query_db
 from menu import Menu
-#import os
-#import re
 import sys
-#from transactions import ExpenseTransaction, IncomeTransaction
-
 from cli_helpers import _find_db, _read_expense_transaction_from_user, _read_income_transaction_from_user
 
 
