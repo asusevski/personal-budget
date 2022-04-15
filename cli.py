@@ -5,7 +5,6 @@ import sys
 from cli_helpers import _find_db, _read_expense_transaction_from_user, _read_income_transaction_from_user
 
 
-
 class CLI():
     def initialize_db(self) -> None:
         # Initialize budget database
@@ -78,6 +77,7 @@ want to have the category be listed as \'groceries\' and the subcategory be \'ch
         database_name = _find_db()
         if not database_name:
             print("No database found. Please intialize a database first.")
+            return
 
         print("Enter q at any time to stop entering income transactions.")
         while True:
@@ -97,6 +97,7 @@ want to have the category be listed as \'groceries\' and the subcategory be \'ch
         database_name = _find_db()
         if not database_name:
             print("No database found. Please intialize a database first.")
+            return
 
         table_name = menu.run()
 
@@ -106,6 +107,7 @@ want to have the category be listed as \'groceries\' and the subcategory be \'ch
         database_name = _find_db()
         if not database_name:
             print("No database found. Please intialize a database first.")
+            return
 
         table_name, row_id = menu.run(database_name)
 
@@ -116,6 +118,7 @@ want to have the category be listed as \'groceries\' and the subcategory be \'ch
         database_name = _find_db()
         if not database_name:
             print("No database found. Please intialize a database first.")
+            return
 
         print("Enter SQL query: ")
         sql_query = input("> ")
