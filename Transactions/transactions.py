@@ -1,8 +1,8 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from expenses import Expense, LedgerEntry, Receipt
-from manage_database import create_connection
-from incomes import Income, Paystub, PaystubLedger
+from Transactions.expenses import Expense, LedgerEntry, Receipt
+from Database.manage_database import _create_connection
+from Transactions.incomes import Income, Paystub, PaystubLedger
 import sqlite3
 
 
@@ -49,7 +49,7 @@ class ExpenseTransaction(Transaction):
         Effects:
             Modifies table 'receipts', 'ledger' and 'expenses' in the database.
         """
-        with create_connection(database_name) as c:
+        with _create_connection(database_name) as c:
             c.execute("begin")
             try:
                 receipt_cols = ", ".join(str(i) for i in list(self.receipt.__dict__.keys()))
@@ -113,7 +113,7 @@ class IncomeTransaction(Transaction):
         Effects:
             Modifies table 'paystubs', 'paystub_ledger' and 'incomes' in the database.
         """
-        with create_connection(database_name) as c:
+        with _create_connection(database_name) as c:
             c.execute("begin")
             try:
                 paystub_cols = ", ".join(str(i) for i in list(self.paystub.__dict__.keys()))

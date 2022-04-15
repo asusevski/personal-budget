@@ -1,6 +1,6 @@
 from dataclasses import dataclass
-from menu import Menu
-from ui import UI
+from UI.menu import Menu
+from UI.ui import UI
 
 
 @dataclass

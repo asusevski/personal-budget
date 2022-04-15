@@ -11,7 +11,7 @@ SEARCH_THRESHOLD = 70
 
 
 @contextmanager
-def create_connection(db_file: str):
+def _create_connection(db_file: str):
     """
     Create a database connection to a SQLite database.
 
@@ -42,7 +42,7 @@ def print_table(database_name: str, table_name: str, sql_query: str = "", cols: 
         sql_query: The SQL query to use to print the table (default is none, which prints the entire table).
         cols: The names of the columns to print (default is none, which prints all columns).
     """
-    with create_connection(database_name) as c:
+    with _create_connection(database_name) as c:
 
         if sql_query != "":
             try:
@@ -76,7 +76,7 @@ def print_table(database_name: str, table_name: str, sql_query: str = "", cols: 
         print(mytable)
 
 
-def insert_into_table(database_name: str, table_name: str, values: list, cols: list = [] )-> int:
+def _insert_into_table(database_name: str, table_name: str, values: list, cols: list = [] )-> int:
     """
     Insert a row into a table in the database.
 
@@ -90,7 +90,7 @@ def insert_into_table(database_name: str, table_name: str, values: list, cols: l
         The id of the row inserted.
     """
     logging.basicConfig(level=logging.INFO)
-    with create_connection(database_name) as c:
+    with _create_connection(database_name) as c:
 
         # Check that the values are not empty
         if len(values) == 0:
@@ -115,7 +115,7 @@ def insert_into_table(database_name: str, table_name: str, values: list, cols: l
 
 
 def initialize_empty_db(database_name: str):
-    with create_connection(database_name) as c:
+    with _create_connection(database_name) as c:
 
         # Payment types table (stores the names of the payment types eg: Visa, Cash, etc...)
         c.execute("""CREATE TABLE IF NOT EXISTS accounts (
@@ -204,7 +204,7 @@ def query_db(database_name: str, sql_query: str) -> list:
     Returns:
         A list of the results of the query.
     """
-    with create_connection(database_name) as c:
+    with _create_connection(database_name) as c:
         try:
             c.execute(sql_query)
         except sqlite3.OperationalError as e:
@@ -214,8 +214,8 @@ def query_db(database_name: str, sql_query: str) -> list:
         return c.fetchall()
 
 
-def search_expense(database_name: str, expense_item: str)-> Tuple[PrettyTable, list]:
-    with create_connection(database_name) as c:
+def _search_expense(database_name: str, expense_item: str)-> Tuple[PrettyTable, list]:
+    with _create_connection(database_name) as c:
         # We add the stipulation that we only search the last year because we don't need to look past a year for most things
         # Also, no need to return duplicate item names, so we remove them
         c.execute("SELECT e.id, item, amount, type, receipt_id, category_id, details \
@@ -238,7 +238,7 @@ def search_expense(database_name: str, expense_item: str)-> Tuple[PrettyTable, l
         return table, matches
 
 
-def search_category(database_name: str, category_id: int) -> Tuple[PrettyTable, list]:
+def _search_category(database_name: str, category_id: int) -> Tuple[PrettyTable, list]:
     """
     Search for a category in the database.
 
@@ -249,7 +249,7 @@ def search_category(database_name: str, category_id: int) -> Tuple[PrettyTable, 
     Returns:
         A tuple containing the PrettyTable object and the list of values of the category.
     """
-    with create_connection(database_name) as c:
+    with _create_connection(database_name) as c:
         c.execute(f"SELECT * FROM categories WHERE id = '{category_id}'")
         # If there are no values, return None and empty list
         vals = c.fetchone()
@@ -273,5 +273,5 @@ def delete_row(database_name: str, table_name: str, row_id: int) -> None:
     Args:
         database_name: The name of the database to delete from.
     """
-    with create_connection(database_name) as c:
+    with _create_connection(database_name) as c:
         c.execute(f"DELETE FROM {table_name} WHERE id = '{row_id}'")

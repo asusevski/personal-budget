@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from manage_database import insert_into_table
+from Database.manage_database import _insert_into_table
 
 
 @dataclass
@@ -32,7 +32,7 @@ class ExpenseCategory():
         Effects:
             Modifies table 'categories' in the database.
         """
-        expense_category_id = insert_into_table(database_name, 'categories', cols=['category', 'subcategory'], \
+        expense_category_id = _insert_into_table(database_name, 'categories', cols=['category', 'subcategory'], \
             values=[self.category, self.subcategory])
         return expense_category_id
 
@@ -68,6 +68,6 @@ class Account:
         Effects:
             Modifies table 'payment_types' in the database.
         """
-        account_id = insert_into_table(database_name, 'accounts', cols=['name', 'description'],\
+        account_id = _insert_into_table(database_name, 'accounts', cols=['name', 'description'],\
                                             values=[self.name, self.description])
         return account_id

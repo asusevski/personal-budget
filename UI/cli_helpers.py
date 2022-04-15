@@ -1,10 +1,10 @@
-from categories import Account, ExpenseCategory
-from expenses import Expense, LedgerEntry, Receipt
-from incomes import Income, Paystub, PaystubLedger
-from manage_database import print_table, search_category, search_expense
+from Transactions.categories import Account, ExpenseCategory
+from Transactions.expenses import Expense, LedgerEntry, Receipt
+from Transactions.incomes import Income, Paystub, PaystubLedger
+from Database.manage_database import print_table, _search_category, _search_expense
 import os
 import re
-from transactions import IncomeTransaction, ExpenseTransaction
+from Transactions.transactions import IncomeTransaction, ExpenseTransaction
 
 
 # CONSTANTS
@@ -21,12 +21,31 @@ def _find_db() -> str:
         The name of the database to use (or the empty string if no database is found).
     """
     db_regex = re.compile(r'(.*)(\.db|\.sqlite3)$')
-    files = sorted(os.listdir('.'))
+    #files = sorted(os.listdir('..'))
+    path = "."
+    files = []
+    for r, _, f in os.walk(path):
+        for file in f:
+            files.append(os.path.join(r, file))
     matches = list(filter(lambda x: db_regex.match(x), files))
     if len(matches) == 0:
         return ""
-    else:
+    elif len(matches) == 1:
         return matches[0]
+    else:
+        print("Multiple databases found, please enter the index of the database you want to use: ")
+        for i, match in enumerate(matches):
+            print(f"{i+1}: {match}")
+        try:
+            db_idx = int(input("> "))
+            assert(db_idx >= 1 and db_idx <= len(matches))
+        except ValueError:
+            print("Invalid selection.")
+            return ""
+        except AssertionError:
+            print("Invalid selection.")
+            return ""
+        return matches[db_idx - 1]
 
 
 def _read_expense_category_from_user() -> ExpenseCategory:
@@ -273,7 +292,7 @@ def _read_user_expenses(database_name: str) -> list:
             break
         
         # Search for similar expense names
-        _, vals = search_expense(database_name, expense_name)
+        _, vals = _search_expense(database_name, expense_name)
         if vals:
             print("We found an existing entry with a similar name.")
             possible_item_names = [val[1] for val in vals]
@@ -321,7 +340,7 @@ def _read_user_expenses(database_name: str) -> list:
             possible_category_ids = list(dict.fromkeys([val[5] for val in vals]))
             possible_categories = []
             for possible_category_id in possible_category_ids:
-                _, category_vals = search_category(database_name, possible_category_id)
+                _, category_vals = _search_category(database_name, possible_category_id)
                 # category_vals is a list instead of a list of tuples since it only ever returns 1 row from table
                 category_name = category_vals[1]
                 subcategory_name = category_vals[2]

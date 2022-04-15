@@ -1,16 +1,16 @@
 from dataclasses import dataclass
-from manage_database import insert_into_table
+from Database.manage_database import _insert_into_table
 
 
 @dataclass
-class Receipt:
+class Paystub:
     """
-    This class stores the details about a receipt.
+    This class stores the details about a paystub.
     
     Attributes:
-        total: The total price of the receipt.
+        total: The total income of the paystub.
         date: The date of the receipt (YYYY-MM-DD)
-        location: The location of the receipt (eg: 'Costco')
+        payer: The source of the paystub (eg: 'work')
 
     Methods:
         insert_into_db(self, database_name): Insert the receipt into the database.
@@ -18,7 +18,7 @@ class Receipt:
     """
     total: float
     date: str
-    location: str
+    payer: str
 
     def insert_into_db(self, database_name: str) -> int:
         """
@@ -33,35 +33,23 @@ class Receipt:
         Effects:
             Modifies table 'receipts' in the database.
         """
-        receipt_id = insert_into_table(database_name, 'receipts', cols=['total', 'date', 'location'], \
-                          values=[self.total, self.date, self.location])
-        return receipt_id
+        paystub_id = _insert_into_table(database_name, 'paystub', cols=['total', 'date', 'payer'], \
+                          values=[self.total, self.date, self.payer])
+        return paystub_id
 
 
 @dataclass
-class Expense:
+class Income:
     """
-    This class stores the details about a single expense.
-    
-    Attributes:
-        item: The name of the expense
-        amount: The price of the expense
-        type: The type of the expense (eg: 'want', 'need', 'savings')
-        details: Any additional details about the expense
-        receipt_id: The id of the receipt associated with the expense assigned by the database.
-        category_id: The id of the expense category associated with the expense assigned by the database.
-        
+    This class stores the details about a single income instance. 
     """
-    item: str
     amount: str
-    type: str
+    paystub: Paystub
     details: str
-    receipt: Receipt
-    category_id: int
 
 
 @dataclass
-class LedgerEntry():
+class PaystubLedger():
     """
     This class stores the information about a single transaction in the ledger.
     
@@ -75,5 +63,5 @@ class LedgerEntry():
 
     """
     amount: str
-    receipt: Receipt
+    paystub: Paystub
     account_id: int

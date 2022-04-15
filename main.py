@@ -1,6 +1,6 @@
-from program import Program
-from program_menus import IndexMenu, MainMenu, TableMenu
-from cli import CLI
+from Program.program import Program
+from UI.program_menus import IndexMenu, MainMenu, TableMenu
+from UI.cli import CLI
 
 
 def main():

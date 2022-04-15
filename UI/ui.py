@@ -1,4 +1,4 @@
-from menu import Menu
+from UI.menu import Menu
 from typing import Protocol
 
 

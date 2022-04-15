@@ -1,4 +1,4 @@
-from manage_database import print_table
+from Database.manage_database import print_table
 from typing import Tuple
 
 

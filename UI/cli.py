@@ -1,8 +1,8 @@
-from categories import Account, ExpenseCategory
-from manage_database import delete_row, initialize_empty_db, print_table, query_db
-from menu import Menu
+from Transactions.categories import Account, ExpenseCategory
+from Database.manage_database import delete_row, initialize_empty_db, print_table, query_db
+from UI.menu import Menu
 import sys
-from cli_helpers import _find_db, _read_expense_transaction_from_user, _read_income_transaction_from_user
+from UI.cli_helpers import _find_db, _read_expense_transaction_from_user, _read_income_transaction_from_user
 
 
 class CLI():
