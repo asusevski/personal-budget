@@ -34,7 +34,6 @@ class CLI():
             account = Account(payment_name, account_description)
             account.insert_into_db(database_name)
 
-
         print("""Initializing expense categories...
         
 Each category entry will have a category and subcategory.
