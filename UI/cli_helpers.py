@@ -2,9 +2,12 @@ from Transactions.categories import Account, ExpenseCategory
 from Transactions.expenses import Expense, LedgerEntry, Receipt
 from Transactions.incomes import Income, Paystub, PaystubLedger
 from Database.manage_database import print_table, _search_category, _search_expense
+from prompt_toolkit.completion import FuzzyWordCompleter
+from prompt_toolkit.shortcuts import prompt
 import os
 import re
 from Transactions.transactions import IncomeTransaction, ExpenseTransaction
+
 
 
 # CONSTANTS
@@ -126,25 +129,15 @@ def _apply_tax(expense_amount: str) -> str:
     return "{:.2f}".format(expense_amount)
 
 
-def _cycle_suggestions(possible_vals: list, col_name: str) -> str:
-    idx = 0
-    while True:
-        print(f"Is \"{possible_vals[idx]}\" the entry for the column \"{col_name}\" you want to add?")
-        print("Press enter to confirm suggestion, \'n\' to see the next suggestion, \'exit\' to exit and ignore suggestions, and anything else to enter a custom entry: ")
-        cmd = input("> ")
-        if cmd.lower() == "":
-            return str(possible_vals[idx])
-        elif cmd.lower() == "n":
-            idx = (idx + 1) % len(possible_vals)
-        elif cmd.lower() == "exit":
-            return "exit"
-        else:
-            return cmd
-
-
-def _read_expense_name() -> str:
+def _read_expense_name(database_name: str) -> str:
     print("Enter expense name (enter nothing or \"done\" if done entering expenses): ")
-    expense_name = input("> ")
+    expense_names = list(set(_search_expense(database_name)['item']))
+    expense_name_completer = FuzzyWordCompleter(expense_names)
+    expense_name = prompt(
+        "> ",
+        completer=expense_name_completer,
+        complete_while_typing=True
+    )
     if expense_name.lower() == "q":
         return None
     if expense_name == "" or expense_name == "done":
@@ -152,22 +145,40 @@ def _read_expense_name() -> str:
     return expense_name
 
 
-def _read_expense_amount() -> str:
+def _read_expense_amount(database_name: str, expense_name: str) -> str:
     print("Enter expense amount ($): ")
-    expense_amount = input("> ")
+    # expense_amount = _apply_tax(expense_amount)
+    # if not expense_amount:
+    #     return None
+
+    # return expense_amount
+    expense_amounts = list(set(_search_expense(database_name, expense_item=expense_name)['amount']))
+    expense_amount_completer = FuzzyWordCompleter(expense_amounts)
+    expense_amount = prompt(
+        "> ",
+        completer=expense_amount_completer,
+        complete_while_typing=True
+    )
+    
     if expense_amount.lower() == "q":
         return None
-
+    
+    if expense_amount == "done":
+        return "done"
+    
     expense_amount = _apply_tax(expense_amount)
-    if not expense_amount:
-        return None
-
     return expense_amount
 
 
 def _read_expense_type() -> str:
     print("Enter type of expense (want, need, or savings): ")
-    expense_type = input("> ")
+    expense_types = ['want', 'need', 'savings']
+    expense_type_completer = FuzzyWordCompleter(expense_types)
+    expense_type = prompt(
+        "> ",
+        completer=expense_type_completer,
+        complete_while_typing=True
+    )
     if expense_type.lower() == "q":
         return None
     return expense_type
@@ -198,70 +209,70 @@ def _read_expense_category(database_name: str, expense_name: str) -> str:
     return expense_category_id
 
 
-def _read_user_expenses_no_suggestions(database_name: str, **kwargs) -> list:
-    """
-    Reads all data required from user to initialize an expense object.
+# def _read_user_expenses_no_suggestions(database_name: str, **kwargs) -> list:
+#     """
+#     Reads all data required from user to initialize an expense object.
 
-    Specifically, reads in the expense name, amount, type, details, and category id.
+#     Specifically, reads in the expense name, amount, type, details, and category id.
 
-    Arguments:
-        database_name: The name of the database to use.
-        kwargs: A dictionary of already queried items.
+#     Arguments:
+#         database_name: The name of the database to use.
+#         kwargs: A dictionary of already queried items.
 
-    Returns:
-        Either a list of the following:
-            expense_name: The name of the expense.
-            expense_amount: The amount of the expense.
-            expense_type: The type of the expense.
-            expense_details: Any details about the expense.
-            expense_category_id: The category id of the expense.
-        Or None if the user quits early.
+#     Returns:
+#         Either a list of the following:
+#             expense_name: The name of the expense.
+#             expense_amount: The amount of the expense.
+#             expense_type: The type of the expense.
+#             expense_details: Any details about the expense.
+#             expense_category_id: The category id of the expense.
+#         Or None if the user quits early.
 
-    """
-    expense = []
-    if "expense_name" not in kwargs:
-        expense_name = _read_expense_name()
-        if not expense_name or expense_name == "done":
-            return None
-        expense.append(expense_name)
-    else:
-        expense.append(kwargs["expense_name"])
+#     """
+#     expense = []
+#     if "expense_name" not in kwargs:
+#         expense_name = _read_expense_name()
+#         if not expense_name or expense_name == "done":
+#             return None
+#         expense.append(expense_name)
+#     else:
+#         expense.append(kwargs["expense_name"])
 
-    if "expense_amount" not in kwargs:
-        expense_amount = _read_expense_amount()
-        if not expense_amount:
-            return None
-        expense.append(expense_amount)
-    else:
-        expense.append(kwargs["expense_amount"])
+#     if "expense_amount" not in kwargs:
+#         expense_amount = _read_expense_amount()
+#         if not expense_amount:
+#             return None
+#         expense.append(expense_amount)
+#     else:
+#         expense.append(kwargs["expense_amount"])
 
-    if "expense_type" not in kwargs:
-        expense_type = _read_expense_type()
-        if not expense_type:
-            return None
-        expense.append(expense_type)
-    else:
-        expense.append(kwargs["expense_type"])
+#     if "expense_type" not in kwargs:
+#         expense_type = _read_expense_type()
+#         if not expense_type:
+#             return None
+#         expense.append(expense_type)
+#     else:
+#         expense.append(kwargs["expense_type"])
 
-    if "expense_details" not in kwargs:
-        expense_details = _read_expense_details()
-        # Expense details is optional, so empty string is valid. Thus, need to check if we have None or empty string.
-        if expense_details is None:
-            return None
-        expense.append(expense_details)
-    else:
-        expense.append(kwargs["expense_details"])
+#     if "expense_details" not in kwargs:
+#         expense_details = _read_expense_details()
+#         # Expense details is optional, so empty string is valid. Thus, need to check if we have None or empty string.
+#         if expense_details is None:
+#             return None
+#         expense.append(expense_details)
+#     else:
+#         expense.append(kwargs["expense_details"])
 
-    if "expense_category_id" not in kwargs:
-        # It's possible there's no local variable expense_name, so we just grab it from the expense list.
-        expense_category_id = _read_expense_category(database_name, expense[0])
-        if not expense_category_id:
-            return None
-        expense.append(expense_category_id)
-    else:
-        expense.append(kwargs["expense_category_id"])
+#     if "expense_category_id" not in kwargs:
+#         # It's possible there's no local variable expense_name, so we just grab it from the expense list.
+#         expense_category_id = _read_expense_category(database_name, expense[0])
+#         if not expense_category_id:
+#             return None
+#         expense.append(expense_category_id)
+#     else:
+#         expense.append(kwargs["expense_category_id"])
 
-    return expense
+#     return expense
 
 
 def _read_user_expenses(database_name: str) -> list:
@@ -285,96 +296,39 @@ def _read_user_expenses(database_name: str) -> list:
     """
     expenses = []
     while True:
-        expense_name = _read_expense_name()
+        expense_name = _read_expense_name(database_name)
         if not expense_name:
             return None
         if expense_name == "done":
             break
         
-        # Search for similar expense names
-        _, vals = _search_expense(database_name, expense_name)
-        if vals:
-            print("We found an existing entry with a similar name.")
-            possible_item_names = [val[1] for val in vals]
-            expense_name_suggestion = _cycle_suggestions(possible_item_names, "expense_name")
-            if expense_name_suggestion.lower() == "q": # Early quit
-                return None
-            elif expense_name_suggestion == "exit": # Ignore suggestions
-                expense = _read_user_expenses_no_suggestions(database_name, expense_name=expense_name)
-                if not expense:
-                    return None
-                expenses.append(expense)
-                continue
-            else:
-                expense_name = expense_name_suggestion
-            
+        expense_amount = _read_expense_amount(database_name, expense_name)
+        if not expense_amount:
+            return None
+        if expense_amount == "done":
+            break
 
-            possible_amounts = [val[2] for val in vals]
-            expense_amount_suggestion = _cycle_suggestions(possible_amounts, "amount")
-            if expense_amount_suggestion.lower() == "q": # Early quit
-                return None
-            elif expense_amount_suggestion == "exit": # Ignore suggestions
-                expense = _read_user_expenses_no_suggestions(database_name, expense_name=expense_name)
-                if not expense:
-                    return None
-                expenses.append(expense)
-                continue
-            else:
-                expense_amount = expense_amount_suggestion
-            
-            possible_types = list(dict.fromkeys([val[3] for val in vals]))
-            expense_type_suggestion = _cycle_suggestions(possible_types, "type")
-            if expense_type_suggestion.lower() == "q": # Early quit
-                return None
-            elif expense_type_suggestion == "exit": # Ignore suggestions
-                expense = _read_user_expenses_no_suggestions(database_name, expense_name=expense_name, \
-                    expense_amount=expense_amount)
-                if not expense:
-                    return None
-                expenses.append(expense)
-                continue
-            else:
-                expense_type = expense_type_suggestion
-            
-            # For category ids, we need more info since the value is acutally an ID rather than a name that's recognizable to the user.
-            possible_category_ids = list(dict.fromkeys([val[5] for val in vals]))
-            possible_categories = []
-            for possible_category_id in possible_category_ids:
-                _, category_vals = _search_category(database_name, possible_category_id)
-                # category_vals is a list instead of a list of tuples since it only ever returns 1 row from table
-                category_name = category_vals[1]
-                subcategory_name = category_vals[2]
-                # NOTE: not sure this works
-                if not subcategory_name:
-                    possible_categories.append(f"{category_name}")
-                else:
-                    possible_categories.append(f"{category_name}-{subcategory_name}")
-            expense_category_suggestion = _cycle_suggestions(possible_categories, "category")
+        expense_type = _read_expense_type(database_name, expense_name)
+        if not expense_amount:
+            return None
+        if expense_amount == "done":
+            break
 
-            if expense_category_suggestion.lower() == "q": # Early quit
-                return None
-            elif expense_category_suggestion == "exit": # Ignore suggestions
-                expense = _read_user_expenses_no_suggestions(database_name, expense_name=expense_name, \
-                    expense_amount=expense_amount, expense_type=expense_type)
-                if not expense:
-                    return None
-                expenses.append(expense)
-                continue
-            else:
-                expense_category_id = possible_category_ids[possible_categories.index(expense_category_suggestion)]
+        expense_category_id = _read_expense_category(database_name, expense_name)
+        if not expense_category_id:
+            return None
+        if expense_category_id == "done":
+            break
+        
+        expense_details = _read_expense_details(database_name, expense_name)
+        if not expense_details:
+            return None
+        if expense_details == "done":
+            break
+        
+        expenses.append([expense_name, expense_amount, expense_type, expense_category_id, expense_details])
+        print("Expense recorded.")
 
-            # Expense details is optional, so empty string is valid. Thus, need to check if we have None or empty string.
-            expense_details = _read_expense_details()
-            if expense_details is None:
-                return None
-            
-            expenses.append([expense_name, expense_amount, expense_type, expense_details, expense_category_id])
-            print("Expense recorded.")
-
-        else:
-            expense = _read_user_expenses_no_suggestions(database_name, expense_name=expense_name)
-            expenses.append(expense)
-            print("Expense recorded.")
     return expenses
 
 
@@ -447,8 +401,8 @@ def _read_expense_transaction_from_user(database_name: str) -> ExpenseTransactio
         expense_name = exp[0]
         expense_amount = exp[1]
         expense_type = exp[2]
-        expense_details = exp[3]
-        expense_category = exp[4]
+        expense_category = exp[3]
+        expense_details = exp[4]
         # added float typecast to ensure that we get 2 decimal places for now. this is a temporary fix.
         expense = Expense(item=expense_name, amount=f"{float(expense_amount):.2f}", type=expense_type,\
                           details=expense_details, receipt=receipt, category_id=expense_category)
