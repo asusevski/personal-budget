@@ -1,7 +1,8 @@
+from collections import Counter
 from Transactions.categories import Account, ExpenseCategory
 from Transactions.expenses import Expense, LedgerEntry, Receipt
 from Transactions.incomes import Income, Paystub, PaystubLedger
-from Database.manage_database import print_table, _search_category, _search_expense
+from Database.manage_database import print_table, _search_categories, _search_expenses
 from prompt_toolkit.completion import FuzzyWordCompleter
 from prompt_toolkit.shortcuts import prompt
 import os
@@ -126,12 +127,12 @@ def _apply_tax(expense_amount: str) -> str:
             tax_rate = float(tax_rate) / 100
         expense_amount = float(expense_amount) * (1 + tax_rate)
     # format expense amount to 2 decimal places and return
-    return "{:.2f}".format(expense_amount)
+    return f"{expense_amount:.2f}"
 
 
 def _read_expense_name(database_name: str) -> str:
     print("Enter expense name (enter nothing or \"done\" if done entering expenses): ")
-    expense_names = list(set(_search_expense(database_name)['item']))
+    expense_names = list(set(_search_expenses(database_name)['item']))
     expense_name_completer = FuzzyWordCompleter(expense_names)
     expense_name = prompt(
         "> ",
@@ -140,19 +141,17 @@ def _read_expense_name(database_name: str) -> str:
     )
     if expense_name.lower() == "q":
         return None
-    if expense_name == "" or expense_name == "done":
-        return "done"
     return expense_name
 
 
-def _read_expense_amount(database_name: str, expense_name: str) -> str:
+def _read_expense_amount(database_name: str, expense_name: str) -> float:
     print("Enter expense amount ($): ")
     # expense_amount = _apply_tax(expense_amount)
     # if not expense_amount:
     #     return None
 
     # return expense_amount
-    expense_amounts = list(set(_search_expense(database_name, expense_item=expense_name)['amount']))
+    expense_amounts = list(set(_search_expenses(database_name, expense_item=expense_name)['amount']))
     expense_amount_completer = FuzzyWordCompleter(expense_amounts)
     expense_amount = prompt(
         "> ",
@@ -163,16 +162,14 @@ def _read_expense_amount(database_name: str, expense_name: str) -> str:
     if expense_amount.lower() == "q":
         return None
     
-    if expense_amount == "done":
-        return "done"
     
     expense_amount = _apply_tax(expense_amount)
-    return expense_amount
+    return float(expense_amount)
 
 
-def _read_expense_type() -> str:
+def _read_expense_type(database_name: str, expense_name: str) -> str:
     print("Enter type of expense (want, need, or savings): ")
-    expense_types = ['want', 'need', 'savings']
+    expense_types = list(set(_search_expenses(database_name, expense_item=expense_name)['type']))
     expense_type_completer = FuzzyWordCompleter(expense_types)
     expense_type = prompt(
         "> ",
@@ -184,95 +181,102 @@ def _read_expense_type() -> str:
     return expense_type
 
 
-def _read_expense_details() -> str:
-    print("Enter any details about the expense (or enter to continue with no details): ")
-    expense_details = input("> ")
-    if expense_details.lower() == "q":
-        return None
-    return expense_details
-
-
-def _read_expense_category(database_name: str, expense_name: str) -> str:
-    print(f"Select expense category id for {expense_name} (see categories below): ")
+def _read_expense_category(database_name: str, expense_name: str) -> int:
+    print(f"Printing categories...")
     print_table(database_name, "categories")
-    print(f"Enter expense category id for {expense_name} or enter \"add\" to add a new expense category for this expense: ")
-    expense_category_id = input("> ")
-    if expense_category_id.lower() == "q":
+
+    expense_categories = list(set(_search_expenses(database_name, expense_item=expense_name)['category_id']))
+    all_categories_map = _search_categories(database_name)
+
+    if expense_categories:
+        existing_expense_category_map = _search_categories(database_name, expense_categories)
+
+        # Find most common category and subcategory names:
+        category_counter = Counter(existing_expense_category_map['category'])
+        subcategory_counter = Counter(existing_expense_category_map['subcategory'])
+        most_common_category_name = category_counter.most_common(1)[0][0]
+        most_common_subcategory_name = subcategory_counter.most_common(1)[0][0]
+
+        print(f"You usually enter {expense_name} with the Category as {most_common_category_name} and Subcategory as {most_common_subcategory_name}.")
+        print(f"Press enter to accept this suggestion or select expense category name or id for {expense_name} from table above. ")
+        #expense_category_completer = FuzzyWordCompleter(list(set(all_categories_map['category'])))
+    else:
+        #all_categories_map = _search_categories(database_name)
+        #expense_category_completer = FuzzyWordCompleter(list(set(all_categories_map['category'])))
+        print("Select a category name or a row id from the table above or enter \"add\" to add a new category: ")
+    expense_category_completer = FuzzyWordCompleter(list(set(all_categories_map['category'])))
+
+    # Error handling: if user enters something invalid, continue until they enter a valid category
+    valid = False
+    expense_category = prompt(
+        "> ",
+        completer=expense_category_completer,
+        complete_while_typing=True
+    )
+    valid_choices = list(set(all_categories_map['category'])) + ["q"] + ["add"] + ["done"]
+    while expense_category not in valid_choices:
+        print("Invalid category name. Please try again: ")
+        expense_category = prompt(
+            "> ",
+            completer=expense_category_completer,
+            complete_while_typing=True
+        )
+
+    if expense_category == "q":
         return None
-    if expense_category_id.lower() == "add":
+    if expense_category == "done":
+        return "done"
+    if expense_category == "add":
         print("Enter new expense category name: ")
         expense_category_name = input("> ")
         print("Enter expense subcategory name (or enter to continue with no subcategory): ")
         expense_subcategory = input("> ")
         expense_cat = ExpenseCategory(expense_category_name, expense_subcategory)
         expense_category_id = expense_cat.insert_into_db(database_name)
-    return expense_category_id
+        return int(expense_category_id)
+
+    # User accepts suggestion
+    if expense_categories and not expense_category:
+        expense_category_id = existing_expense_category_map['id'][existing_expense_category_map['category'].index(most_common_category_name)]
+        return int(expense_category_id)
+
+    # User enters row id
+    if expense_category.strip().isnumeric():
+        expense_category_id = int(expense_category)
+        return int(expense_category_id)
+
+    # Else, the user entered a category name so we need to read the subcategory:
+    expense_subcategory_completer = FuzzyWordCompleter(list(set(all_categories_map['subcategory'])))
+    print("Select a subcategory name from the table above: ")
+    expense_subcategory = prompt(
+            "> ",
+            completer=expense_subcategory_completer,
+            complete_while_typing=True
+        )
+
+    # Error handling: if user enters something invalid, continue until they enter a valid subcategory
+    valid = False
+    while not valid:
+        try:
+            expense_category_id = all_categories_map['id'][all_categories_map['subcategory'].index(expense_subcategory)]
+            valid = True
+        except ValueError:
+            print("Invalid subcategory name. Please try again: ")
+            expense_subcategory = prompt(
+                "> ",
+                completer=expense_subcategory_completer,
+                complete_while_typing=True
+            )
+    
+    return int(expense_category_id)
 
 
-# def _read_user_expenses_no_suggestions(database_name: str, **kwargs) -> list:
-#     """
-#     Reads all data required from user to initialize an expense object.
-
-#     Specifically, reads in the expense name, amount, type, details, and category id.
-
-#     Arguments:
-#         database_name: The name of the database to use.
-#         kwargs: A dictionary of already queried items.
-
-#     Returns:
-#         Either a list of the following:
-#             expense_name: The name of the expense.
-#             expense_amount: The amount of the expense.
-#             expense_type: The type of the expense.
-#             expense_details: Any details about the expense.
-#             expense_category_id: The category id of the expense.
-#         Or None if the user quits early.
-
-#     """
-#     expense = []
-#     if "expense_name" not in kwargs:
-#         expense_name = _read_expense_name()
-#         if not expense_name or expense_name == "done":
-#             return None
-#         expense.append(expense_name)
-#     else:
-#         expense.append(kwargs["expense_name"])
-
-#     if "expense_amount" not in kwargs:
-#         expense_amount = _read_expense_amount()
-#         if not expense_amount:
-#             return None
-#         expense.append(expense_amount)
-#     else:
-#         expense.append(kwargs["expense_amount"])
-
-#     if "expense_type" not in kwargs:
-#         expense_type = _read_expense_type()
-#         if not expense_type:
-#             return None
-#         expense.append(expense_type)
-#     else:
-#         expense.append(kwargs["expense_type"])
-
-#     if "expense_details" not in kwargs:
-#         expense_details = _read_expense_details()
-#         # Expense details is optional, so empty string is valid. Thus, need to check if we have None or empty string.
-#         if expense_details is None:
-#             return None
-#         expense.append(expense_details)
-#     else:
-#         expense.append(kwargs["expense_details"])
-
-#     if "expense_category_id" not in kwargs:
-#         # It's possible there's no local variable expense_name, so we just grab it from the expense list.
-#         expense_category_id = _read_expense_category(database_name, expense[0])
-#         if not expense_category_id:
-#             return None
-#         expense.append(expense_category_id)
-#     else:
-#         expense.append(kwargs["expense_category_id"])
-
-#     return expense
+def _read_expense_details() -> str:
+    print("Enter any details about the expense (or enter to continue with no details): ")
+    expense_details = input("> ")
+    if expense_details.lower() == "q":
+        return None
+    return expense_details
 
 
 def _read_user_expenses(database_name: str) -> list:

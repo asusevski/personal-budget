@@ -214,7 +214,7 @@ def query_db(database_name: str, sql_query: str) -> list:
         return c.fetchall()
 
 
-def _search_expense(database_name: str, expense_item: str = "", days: str = 365)-> list:
+def _search_expenses(database_name: str, expense_item: str = "", days: str = 365)-> dict:
     """
     Searches for the expense in the database.
 
@@ -238,7 +238,7 @@ def _search_expense(database_name: str, expense_item: str = "", days: str = 365)
             SELECT e.id, item, amount, type, receipt_id, category_id, details\
                 FROM receipts INNER JOIN (SELECT * FROM expenses e1 WHERE NOT EXISTS \
                     (SELECT * FROM expenses e2 WHERE e1.item = e2.item and e2.id < e1.id)) e ON receipts.id = e.receipt_id\
-                WHERE JulianDay('now') - JulianDay(date) <= {days} AND item = {expense_item}""")
+                WHERE JulianDay('now') - JulianDay(date) <= {days} AND item = '{expense_item}'""")
         result = {col_data[0]: [] for col_data in c.description}
         for row in c.fetchall():
             for col_index, col_data in enumerate(row):
@@ -247,11 +247,10 @@ def _search_expense(database_name: str, expense_item: str = "", days: str = 365)
         # column_names = [col[0] for col in desc]
         # result = [dict(zip(column_names, row))  
         #         for row in c.fetchall()]
-
         return result
 
 
-def _search_category(database_name: str, category_id: int) -> Tuple[PrettyTable, list]:
+def _search_categories(database_name: str, category_ids: list[int] = []) -> dict:
     """
     Search for a category in the database.
 
@@ -260,23 +259,18 @@ def _search_category(database_name: str, category_id: int) -> Tuple[PrettyTable,
         category_id: The category to search for.
 
     Returns:
-        A tuple containing the PrettyTable object and the list of values of the category.
+        A dictionary of values for the list of category ids. If no list is specified, all categories are returned.
     """
     with _create_connection(database_name) as c:
-        c.execute(f"SELECT * FROM categories WHERE id = '{category_id}'")
-        # If there are no values, return None and empty list
-        vals = c.fetchone()
-        if not vals:
-            return None, []
-        vals = list(vals)
-        # Else, due to the fact that the line "list(c.fetchone())" "empties" the cursor (if there is only one row), 
-        # we need to create a PrettyTable object ourselves with the values retrieved.
-        # This line is required to get the columns of the table (even if no rows exist)
-        table = from_db_cursor(c)
-        # Clearing rows to make sure there's only one row for the expense (for simplicity and clarity of reading)
-        table.clear_rows()
-        table.add_row(vals)
-        return table, vals
+        if not category_ids:
+            c.execute("SELECT * FROM categories")
+        else:
+            c.execute(f"SELECT * FROM categories WHERE id IN { '(' + str(category_ids)[1:-1] + ')'}")
+        result = {col_data[0]: [] for col_data in c.description}
+        for row in c.fetchall():
+            for col_index, col_data in enumerate(row):
+                result[c.description[col_index][0]].append(col_data)
+        return result
 
 
 def delete_row(database_name: str, table_name: str, row_id: int) -> None:
