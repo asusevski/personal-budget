@@ -426,10 +426,12 @@ def _read_user_ledger_entries(database_name: str, receipt_total: float) -> list[
             account_id = account.insert_into_db(database_name)
         
         print(f"How much of the remaining ${receipt_total:.2f} did you pay with this account?")
-        print("Enter payment amount ($): ")
+        print(f"Enter payment amount ($) or press enter if you paid the remaining ${receipt_total:.2f} with acccount id {account_id}: ")
         payment_amount = input("> ")
         if payment_amount.lower() == "q":
             return None
+        if not payment_amount:
+            payment_amount = receipt_total
         
         ledger_entries.append([float(payment_amount), int(account_id)])
         receipt_total -= float(payment_amount)
