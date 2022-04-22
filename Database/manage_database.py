@@ -161,7 +161,7 @@ def initialize_empty_db(database_name: str):
             receipt_id INTEGER NOT NULL,
             account_id INTEGER NOT NULL,
             FOREIGN KEY (receipt_id) REFERENCES receipts(id),
-            FOREIGN KEY (account_id) REFERENCES account(id)
+            FOREIGN KEY (account_id) REFERENCES accounts(id)
         )""")
 
         # Income table (stores details about income eg: income from a job, etc...)
