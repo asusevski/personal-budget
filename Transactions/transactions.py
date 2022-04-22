@@ -76,6 +76,7 @@ class ExpenseTransaction(Transaction):
 
                 c.execute("commit")
             except sqlite3.OperationalError as e:
+                print(e)
                 c.execute("rollback")
                 return e
                 

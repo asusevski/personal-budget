@@ -214,8 +214,9 @@ def _read_expense_category(database_name: str, expense_name: str) -> int:
         complete_while_typing=True
     )
     valid_choices = list(set(all_categories_map['category'])) + ["q"] + ["add"] + ["done"]
-    while expense_category not in valid_choices:
-        print("Invalid category name. Please try again: ")
+
+    while not expense_category.strip().isnumeric() and expense_category not in valid_choices:
+        print("Invalid entry. Please try again: ")
         expense_category = prompt(
             "> ",
             completer=expense_category_completer,
@@ -324,8 +325,8 @@ def _read_user_expenses(database_name: str) -> list:
         if expense_category_id == "done":
             break
         
-        expense_details = _read_expense_details(database_name, expense_name)
-        if not expense_details:
+        expense_details = _read_expense_details()
+        if not isinstance(expense_details, str) and not expense_details:
             return None
         if expense_details == "done":
             break
@@ -389,7 +390,7 @@ def _read_expense_transaction_from_user(database_name: str) -> ExpenseTransactio
     # Calculate receipt total:
     receipt_total = 0
     for expense in expense_user_data:
-        amount = float(expense[1])
+        amount = expense[1]
         receipt_total += amount
     
     ledger_entries_user_data = _read_user_ledger_entries(database_name, receipt_total)
@@ -407,8 +408,7 @@ def _read_expense_transaction_from_user(database_name: str) -> ExpenseTransactio
         expense_type = exp[2]
         expense_category = exp[3]
         expense_details = exp[4]
-        # added float typecast to ensure that we get 2 decimal places for now. this is a temporary fix.
-        expense = Expense(item=expense_name, amount=f"{float(expense_amount):.2f}", type=expense_type,\
+        expense = Expense(item=expense_name, amount=f"{expense_amount:.2f}", type=expense_type,\
                           details=expense_details, receipt=receipt, category_id=expense_category)
         expenses.append(expense)
     
