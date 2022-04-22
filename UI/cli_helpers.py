@@ -1,4 +1,5 @@
 from collections import Counter
+import datetime
 from Transactions.categories import Account, ExpenseCategory
 from Transactions.expenses import Expense, LedgerEntry, Receipt
 from Transactions.incomes import Income, Paystub, PaystubLedger
@@ -25,7 +26,6 @@ def _find_db() -> str:
         The name of the database to use (or the empty string if no database is found).
     """
     db_regex = re.compile(r'(.*)(\.db|\.sqlite3)$')
-    #files = sorted(os.listdir('..'))
     path = "."
     files = []
     for r, _, f in os.walk(path):
@@ -58,7 +58,8 @@ def _read_expense_category_from_user() -> ExpenseCategory:
 
     Returns:
         An ExpenseCategory object.
-    """    
+    """
+    
     print("Enter expense category name: ")
     name = input("> ")
     print("Enter expense category description: ")
@@ -96,6 +97,17 @@ def _read_user_receipt() -> list:
     # Get receipt date:
     print("Enter date of expense or expenses (YYYY-MM-DD): ")
     receipt_date = input("> ")
+    valid = False
+    while not valid:
+        try:
+            datetime.datetime.strptime(receipt_date, '%Y-%m-%d')
+            valid = True
+        except ValueError:
+            print("Invalid date format. Try again.")
+            receipt_date = input("> ")
+            if receipt_date.lower() == "q":
+                return None
+    
     if receipt_date.lower() == "q":
         return None
 
@@ -107,9 +119,7 @@ def _read_user_receipt() -> list:
     return [receipt_date, receipt_location]
 
 
-def _apply_tax(expense_amount: str) -> str:
-    expense_amount = float(expense_amount)
-
+def _apply_tax(expense_amount: float) -> float:
     # Check if expense is taxable:
     print("Is this expense taxable? (y/n): ")
     taxable = input("> ")
@@ -127,7 +137,7 @@ def _apply_tax(expense_amount: str) -> str:
             tax_rate = float(tax_rate) / 100
         expense_amount = float(expense_amount) * (1 + tax_rate)
     # format expense amount to 2 decimal places and return
-    return f"{expense_amount:.2f}"
+    return expense_amount
 
 
 def _read_expense_name(database_name: str) -> str:
@@ -141,16 +151,13 @@ def _read_expense_name(database_name: str) -> str:
     )
     if expense_name.lower() == "q":
         return None
+    if expense_name.lower() == "done":
+        return "done"
     return expense_name
 
 
 def _read_expense_amount(database_name: str, expense_name: str) -> float:
     print("Enter expense amount ($): ")
-    # expense_amount = _apply_tax(expense_amount)
-    # if not expense_amount:
-    #     return None
-
-    # return expense_amount
     expense_amounts = list(set(_search_expenses(database_name, expense_item=expense_name)['amount']))
     expense_amount_completer = FuzzyWordCompleter(expense_amounts)
     expense_amount = prompt(
@@ -161,8 +168,25 @@ def _read_expense_amount(database_name: str, expense_name: str) -> float:
     
     if expense_amount.lower() == "q":
         return None
-    
-    
+    if expense_amount.lower() == "done":
+        return "done"
+
+    valid = False
+    while not valid:
+        try:
+            expense_amount = float(expense_amount)
+            valid = True
+        except ValueError:
+            print("Invalid amount entered, please try again: ")
+            expense_amount = prompt(
+            "> ",
+            completer=expense_amount_completer,
+            complete_while_typing=True
+        )          
+            if expense_amount.lower() == "q":
+                return None
+            if expense_amount.lower() == "done":
+                return "done"                    
     expense_amount = _apply_tax(expense_amount)
     return float(expense_amount)
 
@@ -178,6 +202,21 @@ def _read_expense_type(database_name: str, expense_name: str) -> str:
     )
     if expense_type.lower() == "q":
         return None
+    if expense_type.lower() == "done":
+        return "done"
+
+    while expense_type.lower() not in ['want', 'need', 'savings']:
+        print("Invalid type entered, please try again: ")
+        expense_type = prompt(
+            "> ",
+            completer=expense_type_completer,
+            complete_while_typing=True
+        )
+        if expense_type.lower() == "q":
+            return None
+        if expense_type.lower() == "done":
+            return "done"
+
     return expense_type
 
 
@@ -199,10 +238,7 @@ def _read_expense_category(database_name: str, expense_name: str) -> int:
 
         print(f"You usually enter {expense_name} with the Category as {most_common_category_name} and Subcategory as {most_common_subcategory_name}.")
         print(f"Press enter to accept this suggestion or select expense category name or id for {expense_name} from table above. ")
-        #expense_category_completer = FuzzyWordCompleter(list(set(all_categories_map['category'])))
     else:
-        #all_categories_map = _search_categories(database_name)
-        #expense_category_completer = FuzzyWordCompleter(list(set(all_categories_map['category'])))
         print("Select a category name or a row id from the table above or enter \"add\" to add a new category: ")
     expense_category_completer = FuzzyWordCompleter(list(set(all_categories_map['category'])))
 
@@ -213,8 +249,12 @@ def _read_expense_category(database_name: str, expense_name: str) -> int:
         completer=expense_category_completer,
         complete_while_typing=True
     )
-    valid_choices = list(set(all_categories_map['category'])) + ["q"] + ["add"] + ["done"]
+    if expense_category == "q":
+        return None
+    if expense_category == "done":
+        return "done"
 
+    valid_choices = list(set(all_categories_map['category'])) + ["q"] + ["add"] + ["done"]
     while not expense_category.strip().isnumeric() and expense_category not in valid_choices:
         print("Invalid entry. Please try again: ")
         expense_category = prompt(
@@ -222,16 +262,24 @@ def _read_expense_category(database_name: str, expense_name: str) -> int:
             completer=expense_category_completer,
             complete_while_typing=True
         )
+        if expense_category.lower() == "q":
+            return None
+        if expense_category.lower() == "done":
+            return "done"
 
-    if expense_category == "q":
-        return None
-    if expense_category == "done":
-        return "done"
     if expense_category == "add":
         print("Enter new expense category name: ")
         expense_category_name = input("> ")
+        if expense_category_name.lower() == "q":
+            return None
+        if expense_category_name.lower() == "done":
+            return "done"
         print("Enter expense subcategory name (or enter to continue with no subcategory): ")
         expense_subcategory = input("> ")
+        if expense_subcategory.lower() == "q":
+            return None
+        if expense_subcategory.lower() == "done":
+            return "done"
         expense_cat = ExpenseCategory(expense_category_name, expense_subcategory)
         expense_category_id = expense_cat.insert_into_db(database_name)
         return int(expense_category_id)
@@ -254,6 +302,10 @@ def _read_expense_category(database_name: str, expense_name: str) -> int:
             completer=expense_subcategory_completer,
             complete_while_typing=True
         )
+    if expense_subcategory.lower() == "q":
+            return None
+    if expense_subcategory.lower() == "done":
+        return "done"
 
     # Error handling: if user enters something invalid, continue until they enter a valid subcategory
     valid = False
@@ -268,6 +320,10 @@ def _read_expense_category(database_name: str, expense_name: str) -> int:
                 completer=expense_subcategory_completer,
                 complete_while_typing=True
             )
+            if expense_subcategory.lower() == "q":
+                return None
+            if expense_subcategory.lower() == "done":
+                return "done"
     
     return int(expense_category_id)
 
@@ -277,6 +333,8 @@ def _read_expense_details() -> str:
     expense_details = input("> ")
     if expense_details.lower() == "q":
         return None
+    if expense_details.lower() == "done":
+                return "done"
     return expense_details
 
 
@@ -326,6 +384,7 @@ def _read_user_expenses(database_name: str) -> list:
             break
         
         expense_details = _read_expense_details()
+        # Need to check if user returned an empty string or "None". None = user quit early and empty string = user entered nothing
         if not isinstance(expense_details, str) and not expense_details:
             return None
         if expense_details == "done":
