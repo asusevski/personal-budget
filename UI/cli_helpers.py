@@ -97,6 +97,10 @@ def _read_user_receipt() -> list:
     # Get receipt date:
     print("Enter date of expense or expenses (YYYY-MM-DD): ")
     receipt_date = input("> ")
+
+    if receipt_date.lower() == "q":
+        return None
+    
     valid = False
     while not valid:
         try:
@@ -108,9 +112,6 @@ def _read_user_receipt() -> list:
             if receipt_date.lower() == "q":
                 return None
     
-    if receipt_date.lower() == "q":
-        return None
-
     # Get receipt location:
     print("Enter location of expense(s): ")
     receipt_location = input("> ")
@@ -158,7 +159,8 @@ def _read_expense_name(database_name: str) -> str:
 
 def _read_expense_amount(database_name: str, expense_name: str) -> float:
     print("Enter expense amount ($): ")
-    expense_amounts = list(set(_search_expenses(database_name, expense_item=expense_name)['amount']))
+    # it appears autocompleter requires strings, not float
+    expense_amounts = list(str(x) for x in set(_search_expenses(database_name, expense_item=expense_name)['amount']))
     expense_amount_completer = FuzzyWordCompleter(expense_amounts)
     expense_amount = prompt(
         "> ",
@@ -236,7 +238,10 @@ def _read_expense_category(database_name: str, expense_name: str) -> int:
         most_common_category_name = category_counter.most_common(1)[0][0]
         most_common_subcategory_name = subcategory_counter.most_common(1)[0][0]
 
-        print(f"You usually enter {expense_name} with the Category as {most_common_category_name} and Subcategory as {most_common_subcategory_name}.")
+        if most_common_subcategory_name:
+            print(f"You usually enter {expense_name} with the Category as {most_common_category_name} and Subcategory as {most_common_subcategory_name}.")
+        else:
+            print(f"You usually enter {expense_name} with the Category as {most_common_category_name} and no Subcategory.")
         print(f"Press enter to accept this suggestion or select expense category name or id for {expense_name} from table above. ")
     else:
         print("Select a category name or a row id from the table above or enter \"add\" to add a new category: ")
@@ -254,6 +259,11 @@ def _read_expense_category(database_name: str, expense_name: str) -> int:
     if expense_category == "done":
         return "done"
 
+    # User accepts suggestion
+    if expense_categories and not expense_category:
+        expense_category_id = existing_expense_category_map['id'][existing_expense_category_map['category'].index(most_common_category_name)]
+        return int(expense_category_id)
+    
     valid_choices = list(set(all_categories_map['category'])) + ["q"] + ["add"] + ["done"]
     while not expense_category.strip().isnumeric() and expense_category not in valid_choices:
         print("Invalid entry. Please try again: ")
@@ -282,11 +292,6 @@ def _read_expense_category(database_name: str, expense_name: str) -> int:
             return "done"
         expense_cat = ExpenseCategory(expense_category_name, expense_subcategory)
         expense_category_id = expense_cat.insert_into_db(database_name)
-        return int(expense_category_id)
-
-    # User accepts suggestion
-    if expense_categories and not expense_category:
-        expense_category_id = existing_expense_category_map['id'][existing_expense_category_map['category'].index(most_common_category_name)]
         return int(expense_category_id)
 
     # User enters row id
@@ -330,6 +335,8 @@ def _read_expense_category(database_name: str, expense_name: str) -> int:
 
 def _read_expense_details() -> str:
     print("Enter any details about the expense (or enter to continue with no details): ")
+    # Here print most common "details" if previously entered this expense.
+    # print("Note: you have entered this with {} in the details before.")
     expense_details = input("> ")
     if expense_details.lower() == "q":
         return None
@@ -396,11 +403,13 @@ def _read_user_expenses(database_name: str) -> list:
     return expenses
 
 
-def _read_user_ledger_entries(database_name: str, receipt_total: float) -> list:
+def _read_user_ledger_entries(database_name: str, receipt_total: float) -> list[list[float, int]]:
     print("How did you pay?")
-    tol = 10e-4
+    tol = 10e-3
     ledger_entries = []
     while abs(receipt_total) >= tol:
+        print(receipt_total)
+        print(type(receipt_total))
         print("Remaining on receipt: ${:.2f}".format(receipt_total))
         print("Select account id used to pay (see accounts below): ")
         print_table(database_name, "accounts")
@@ -422,7 +431,7 @@ def _read_user_ledger_entries(database_name: str, receipt_total: float) -> list:
         if payment_amount.lower() == "q":
             return None
         
-        ledger_entries.append([payment_amount, account_id])
+        ledger_entries.append([float(payment_amount), int(account_id)])
         receipt_total -= float(payment_amount)
     return ledger_entries
 
