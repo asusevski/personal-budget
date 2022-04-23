@@ -1,9 +1,7 @@
 from contextlib import contextmanager
-from fuzzywuzzy import fuzz
 import logging
-from prettytable import PrettyTable, from_db_cursor
+from prettytable import from_db_cursor
 import sqlite3
-from typing import Tuple
 
 
 # Constants:
