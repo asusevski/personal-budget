@@ -154,6 +154,24 @@ def _read_expense_name(database_name: str) -> str:
         return None
     if expense_name.lower() == "done":
         return "done"
+    
+    # Enforce that the expense name cannot be empty string
+    valid = False
+    while not valid:
+        if not expense_name:
+            print("Expense name cannot be empty.")
+            expense_name = prompt(
+            "> ",
+            completer=expense_name_completer,
+            complete_while_typing=True
+            )       
+            if expense_name.lower() == "q":
+                return None
+            if expense_name.lower() == "done":
+                return "done"
+            continue
+        valid = True
+
     return expense_name
 
 
@@ -195,19 +213,32 @@ def _read_expense_amount(database_name: str, expense_name: str) -> float:
 
 def _read_expense_type(database_name: str, expense_name: str) -> str:
     print("Enter type of expense (want, need, or savings): ")
+
     expense_types = list(set(_search_expenses(database_name, expense_item=expense_name)['type']))
-    expense_type_completer = FuzzyWordCompleter(expense_types)
+    if expense_types:
+        type_counter = Counter(expense_types)
+        most_common_type = type_counter.most_common(1)[0][0]
+        print(f"You usually enter {expense_name} with the type {most_common_type}.")
+        print(f"Press enter to accept this suggestion or enter \'want\', \'need\', or \'savings\' for {expense_name}.")
+
+    all_types = ['want', 'need', 'savings']
+    expense_type_completer = FuzzyWordCompleter(all_types)
     expense_type = prompt(
         "> ",
         completer=expense_type_completer,
         complete_while_typing=True
     )
+
     if expense_type.lower() == "q":
         return None
     if expense_type.lower() == "done":
         return "done"
 
-    while expense_type.lower() not in ['want', 'need', 'savings']:
+    # User accepts suggestion
+    if expense_types and not expense_type:
+        return most_common_type
+
+    while expense_type.lower() not in all_types:
         print("Invalid type entered, please try again: ")
         expense_type = prompt(
             "> ",
@@ -242,13 +273,11 @@ def _read_expense_category(database_name: str, expense_name: str) -> int:
             print(f"You usually enter {expense_name} with the Category as {most_common_category_name} and Subcategory as {most_common_subcategory_name}.")
         else:
             print(f"You usually enter {expense_name} with the Category as {most_common_category_name} and no Subcategory.")
-        print(f"Press enter to accept this suggestion or select expense category name or id for {expense_name} from table above. ")
+        print(f"Press enter to accept this suggestion or select expense category name or id for {expense_name} from table above.")
     else:
         print("Select a category name or a row id from the table above or enter \"add\" to add a new category: ")
     expense_category_completer = FuzzyWordCompleter(list(set(all_categories_map['category'])))
 
-    # Error handling: if user enters something invalid, continue until they enter a valid category
-    valid = False
     expense_category = prompt(
         "> ",
         completer=expense_category_completer,
