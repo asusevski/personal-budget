@@ -18,7 +18,7 @@ class Program:
             elif choice == 2:
                 self.ui.insert_expense_transactions()
             elif choice == 3:
-                self.ui.insert_income_transaction()
+                self.ui.insert_income_transactions()
             elif choice == 4:
                 self.ui.print_table(self.table_menu)
             elif choice == 5:
