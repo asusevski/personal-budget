@@ -218,8 +218,8 @@ def _read_expense_type(database_name: str, expense_name: str) -> str:
     if expense_types:
         type_counter = Counter(expense_types)
         most_common_type = type_counter.most_common(1)[0][0]
-        print(f"You usually enter {expense_name} with the type {most_common_type}.")
-        print(f"Press enter to accept this suggestion or enter \'want\', \'need\', or \'savings\' for {expense_name}.")
+        print(f"You usually enter \033[1m{expense_name}\033[0m with the type \033[1m{most_common_type}\033[0m.")
+        print(f"\033[1mPress enter to accept\033[0m this suggestion or enter \'want\', \'need\', or \'savings\' for {expense_name}.")
 
     all_types = ['want', 'need', 'savings']
     expense_type_completer = FuzzyWordCompleter(all_types)
@@ -270,10 +270,10 @@ def _read_expense_category(database_name: str, expense_name: str) -> int:
         most_common_subcategory_name = subcategory_counter.most_common(1)[0][0]
 
         if most_common_subcategory_name:
-            print(f"You usually enter {expense_name} with the Category as {most_common_category_name} and Subcategory as {most_common_subcategory_name}.")
+            print(f"You usually enter \033[1m{expense_name}\033[0m with the Category as \033[1m{most_common_category_name}\033[0m and Subcategory as \033[1m{most_common_subcategory_name}\033[0m.")
         else:
-            print(f"You usually enter {expense_name} with the Category as {most_common_category_name} and no Subcategory.")
-        print(f"Press enter to accept this suggestion or select expense category name or id for {expense_name} from table above.")
+            print(f"You usually enter \033[1m{expense_name}\033[0m with the Category as \033[1m{most_common_category_name}\033[0m and no Subcategory.")
+        print(f"\033[1mPress enter to accept\033[0m this suggestion or select expense category name or id for {expense_name} from table above.")
     else:
         print("Select a category name or a row id from the table above or enter \"add\" to add a new category: ")
     expense_category_completer = FuzzyWordCompleter(list(set(all_categories_map['category'])))
