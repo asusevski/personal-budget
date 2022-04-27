@@ -135,9 +135,20 @@ def _apply_tax(expense_amount: float) -> float:
             tax_rate = HST_TAX_RATE
         # NOTE: this is not robust to weird input at all, fix!
         else:
-            tax_rate = float(tax_rate) / 100
+            valid = False
+            while not valid:
+                try:
+                    tax_rate = float(tax_rate)
+                    valid = True
+                except ValueError:
+                    print("Invalid input. Try again.")
+                    tax_rate = input("> ")
+                    if tax_rate.lower() == "q":
+                        return None
+                    if tax_rate == "":
+                        tax_rate = HST_TAX_RATE
+                        valid = True
         expense_amount = float(expense_amount) * (1 + tax_rate)
-    # format expense amount to 2 decimal places and return
     return expense_amount
 
 
@@ -364,8 +375,6 @@ def _read_expense_category(database_name: str, expense_name: str) -> int:
 
 def _read_expense_details() -> str:
     print("Enter any details about the expense (or enter to continue with no details): ")
-    # Here print most common "details" if previously entered this expense.
-    # print("Note: you have entered this with {} in the details before.")
     expense_details = input("> ")
     if expense_details.lower() == "q":
         return None

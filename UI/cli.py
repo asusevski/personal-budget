@@ -44,7 +44,7 @@ want to have the category be listed as \'groceries\' and the subcategory be \'ch
         """)
 
         while True:
-            print("Enter category name (eg: grocery, bills, etc...) or q if you are done entering expense types: ")
+            print("Enter category name (eg: grocery, bills, etc...) or q if you are done entering categories: ")
             category_name = input("> ")
             if category_name == "" or category_name == "q":
                 break
