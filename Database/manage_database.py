@@ -207,7 +207,7 @@ def query_db(database_name: str, sql_query: str) -> list:
             c.execute(sql_query)
         except sqlite3.OperationalError as e:
             logging.error(f"Invalid SQL query. See error message -> {e}")
-            return
+            return []
 
         return c.fetchall()
 
