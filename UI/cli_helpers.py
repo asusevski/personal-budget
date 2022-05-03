@@ -4,16 +4,30 @@ from Transactions.categories import Account, ExpenseCategory
 from Transactions.expenses import Expense, LedgerEntry, Receipt
 from Transactions.incomes import Income, Paystub, PaystubLedger
 from Database.manage_database import print_table, _search_categories, _search_expenses
-from prompt_toolkit.completion import FuzzyWordCompleter
+from prompt_toolkit.completion import Completer, Completion, FuzzyCompleter
 from prompt_toolkit.shortcuts import prompt
 import os
 import re
 from Transactions.transactions import IncomeTransaction, ExpenseTransaction
 
 
-
 # CONSTANTS
 HST_TAX_RATE = 0.13
+
+
+# Custom completer for fuzzy matching
+class CustomCompleter(Completer):
+    def __init__(self, words: list[str]):
+        self.words = words
+
+    def get_completions(self, document, complete_event):
+        word = document.get_word_before_cursor()
+        for expense_name in self.words:
+            if expense_name.startswith(word):
+                yield Completion(
+                    expense_name, 
+                    start_position=-len(document.text)
+                )
 
 
 def _find_db() -> str:
@@ -152,13 +166,13 @@ def _apply_tax(expense_amount: float) -> float:
     return expense_amount
 
 
-def _read_expense_name(database_name: str) -> str:
+def _read_expense_name(expense_map: dict) -> str:
     print("Enter expense name (enter nothing or \"done\" if done entering expenses): ")
-    expense_names = list(set(_search_expenses(database_name)['item']))
-    expense_name_completer = FuzzyWordCompleter(expense_names)
+    expense_names = list(set(expense_map['item']))
+    completer = FuzzyCompleter(CustomCompleter(expense_names))
     expense_name = prompt(
         "> ",
-        completer=expense_name_completer,
+        completer=completer,
         complete_while_typing=True
     )
     if expense_name.lower() == "q":
@@ -173,7 +187,7 @@ def _read_expense_name(database_name: str) -> str:
             print("Expense name cannot be empty.")
             expense_name = prompt(
             "> ",
-            completer=expense_name_completer,
+            completer=completer,
             complete_while_typing=True
             )       
             if expense_name.lower() == "q":
@@ -186,14 +200,14 @@ def _read_expense_name(database_name: str) -> str:
     return expense_name
 
 
-def _read_expense_amount(database_name: str, expense_name: str) -> float:
+def _read_expense_amount(expense_map: dict) -> float:
     print("Enter expense amount ($): ")
     # it appears autocompleter requires strings, not float
-    expense_amounts = list(str(x) for x in set(_search_expenses(database_name, expense_item=expense_name)['amount']))
-    expense_amount_completer = FuzzyWordCompleter(expense_amounts)
+    expense_amounts = list(str(x) for x in set(expense_map['amount']))
+    completer = FuzzyCompleter(CustomCompleter(expense_amounts))
     expense_amount = prompt(
         "> ",
-        completer=expense_amount_completer,
+        completer=completer,
         complete_while_typing=True
     )
     
@@ -211,7 +225,7 @@ def _read_expense_amount(database_name: str, expense_name: str) -> float:
             print("Invalid amount entered, please try again: ")
             expense_amount = prompt(
             "> ",
-            completer=expense_amount_completer,
+            completer=completer,
             complete_while_typing=True
         )          
             if expense_amount.lower() == "q":
@@ -222,10 +236,10 @@ def _read_expense_amount(database_name: str, expense_name: str) -> float:
     return float(expense_amount)
 
 
-def _read_expense_type(database_name: str, expense_name: str) -> str:
+def _read_expense_type(expense_name: str, expense_map: dict) -> str:
     print("Enter type of expense (want, need, or savings): ")
 
-    expense_types = list(set(_search_expenses(database_name, expense_item=expense_name)['type']))
+    expense_types = list(set(expense_map['type']))
     if expense_types:
         type_counter = Counter(expense_types)
         most_common_type = type_counter.most_common(1)[0][0]
@@ -233,10 +247,10 @@ def _read_expense_type(database_name: str, expense_name: str) -> str:
         print(f"\033[1mPress enter to accept\033[0m this suggestion or enter \'want\', \'need\', or \'savings\' for {expense_name}.")
 
     all_types = ['want', 'need', 'savings']
-    expense_type_completer = FuzzyWordCompleter(all_types)
+    completer = FuzzyCompleter(CustomCompleter(all_types))
     expense_type = prompt(
         "> ",
-        completer=expense_type_completer,
+        completer=completer,
         complete_while_typing=True
     )
 
@@ -253,7 +267,7 @@ def _read_expense_type(database_name: str, expense_name: str) -> str:
         print("Invalid type entered, please try again: ")
         expense_type = prompt(
             "> ",
-            completer=expense_type_completer,
+            completer=completer,
             complete_while_typing=True
         )
         if expense_type.lower() == "q":
@@ -264,12 +278,12 @@ def _read_expense_type(database_name: str, expense_name: str) -> str:
     return expense_type
 
 
-def _read_expense_category(database_name: str, expense_name: str) -> int:
+def _read_expense_category(database_name: str, expense_name: str, expense_map: dict, category_map: dict) -> int:
     print(f"Printing categories...")
     print_table(database_name, "categories")
 
-    expense_categories = list(set(_search_expenses(database_name, expense_item=expense_name)['category_id']))
-    all_categories_map = _search_categories(database_name)
+    expense_categories = list(set(expense_map['category_id']))
+    #all_categories_map = category_map
 
     if expense_categories:
         existing_expense_category_map = _search_categories(database_name, expense_categories)
@@ -287,11 +301,11 @@ def _read_expense_category(database_name: str, expense_name: str) -> int:
         print(f"\033[1mPress enter to accept\033[0m this suggestion or select expense category name or id for {expense_name} from table above.")
     else:
         print("Select a category name or a row id from the table above or enter \"add\" to add a new category: ")
-    expense_category_completer = FuzzyWordCompleter(list(set(all_categories_map['category'])))
 
+    category_completer = FuzzyCompleter(CustomCompleter(list(set(category_map['category']))))
     expense_category = prompt(
         "> ",
-        completer=expense_category_completer,
+        completer=category_completer,
         complete_while_typing=True
     )
     if expense_category == "q":
@@ -304,12 +318,12 @@ def _read_expense_category(database_name: str, expense_name: str) -> int:
         expense_category_id = existing_expense_category_map['id'][existing_expense_category_map['category'].index(most_common_category_name)]
         return int(expense_category_id)
     
-    valid_choices = list(set(all_categories_map['category'])) + ["q"] + ["add"] + ["done"]
+    valid_choices = list(set(category_map['category'])) + ["q"] + ["add"] + ["done"]
     while not expense_category.strip().isnumeric() and expense_category not in valid_choices:
         print("Invalid entry. Please try again: ")
         expense_category = prompt(
             "> ",
-            completer=expense_category_completer,
+            completer=category_completer,
             complete_while_typing=True
         )
         if expense_category.lower() == "q":
@@ -340,11 +354,11 @@ def _read_expense_category(database_name: str, expense_name: str) -> int:
         return int(expense_category_id)
 
     # Else, the user entered a category name so we need to read the subcategory:
-    expense_subcategory_completer = FuzzyWordCompleter(list(set(all_categories_map['subcategory'])))
     print("Select a subcategory name from the table above: ")
+    subcategory_completer = FuzzyCompleter(CustomCompleter(list(set(category_map['subcategory']))))
     expense_subcategory = prompt(
             "> ",
-            completer=expense_subcategory_completer,
+            completer=subcategory_completer,
             complete_while_typing=True
         )
     if expense_subcategory.lower() == "q":
@@ -356,13 +370,13 @@ def _read_expense_category(database_name: str, expense_name: str) -> int:
     valid = False
     while not valid:
         try:
-            expense_category_id = all_categories_map['id'][all_categories_map['subcategory'].index(expense_subcategory)]
+            expense_category_id = category_map['id'][category_map['subcategory'].index(expense_subcategory)]
             valid = True
         except ValueError:
             print("Invalid subcategory name. Please try again: ")
             expense_subcategory = prompt(
                 "> ",
-                completer=expense_subcategory_completer,
+                completer=subcategory_completer,
                 complete_while_typing=True
             )
             if expense_subcategory.lower() == "q":
@@ -402,27 +416,40 @@ def _read_user_expenses(database_name: str) -> list:
         Or None if the user quits early.
 
     """
+    
+    #expense_category_completer = FuzzyWordCompleter(list(set(all_categories_map['category'])))
     expenses = []
     while True:
-        expense_name = _read_expense_name(database_name)
+        # Autocompletion for expense names:
+        expense_map = _search_expenses(database_name)
+
+        # Read expense name:
+        expense_name = _read_expense_name(expense_map)
         if not expense_name:
             return None
         if expense_name == "done":
             break
+    
+        # Now note that we have the expense name, so we can search for the expense in the database and 
+        # pass only the relevant rows to the rest
+        expense_map = _search_expenses(database_name, expense_item=expense_name)
+
+        expense_amount = _read_expense_amount(expense_map)
+        if not expense_amount:
+            return None
+        if expense_amount == "done":
+            break
         
-        expense_amount = _read_expense_amount(database_name, expense_name)
+        expense_type = _read_expense_type(expense_name, expense_map)
         if not expense_amount:
             return None
         if expense_amount == "done":
             break
+        
+        # Need category map to get category id and names
+        categories_map = _search_categories(database_name)
 
-        expense_type = _read_expense_type(database_name, expense_name)
-        if not expense_amount:
-            return None
-        if expense_amount == "done":
-            break
-
-        expense_category_id = _read_expense_category(database_name, expense_name)
+        expense_category_id = _read_expense_category(database_name, expense_name, expense_map, categories_map)
         if not expense_category_id:
             return None
         if expense_category_id == "done":
