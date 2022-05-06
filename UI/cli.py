@@ -6,6 +6,10 @@ from UI.cli_helpers import _find_db, _read_expense_transaction_from_user, _read_
 
 
 class CLI():
+    def run(self) -> None:
+        # initialize prompt session
+        pass
+    
     def initialize_db(self) -> None:
         # Initialize budget database
         print("Enter database name (default name is budget): ")
