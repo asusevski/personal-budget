@@ -10,6 +10,7 @@ from Transactions.incomes import Income, Paystub, PaystubLedger
 from Transactions.transactions import IncomeTransaction, ExpenseTransaction
 from UI.cli_autocompleter import CustomCompleter
 from UI.menu import Menu
+from UI.program_menus import IndexMenu, MainMenu, TableMenu
 
 
 # CONSTANTS
@@ -49,6 +50,13 @@ def _apply_tax(expense_amount: float) -> float:
 
 
 class CLI():
+    # def __init__(self, table_options: list) -> None:
+    #     main_menu_options = ["Insert expense transaction", "Insert income transaction", "Print table", "Delete row", \
+    #                      "Execute arbitrary sql query", "Exit"]
+    #     self.main_menu = MainMenu(options=main_menu_options)
+    #     self.table_menu = TableMenu(options=table_options)
+    #     self.index_menu = IndexMenu(options=table_options)
+
     @staticmethod
     def _read_user_receipt() -> list:
         """
@@ -348,7 +356,7 @@ class CLI():
         #expense_category_completer = FuzzyWordCompleter(list(set(all_categories_map['category'])))
         expenses = []
         while True:
-            user_data = []
+            user_data = {}
             # Autocompletion for expense names:
             expense_map = database._search_expenses()
 
@@ -359,7 +367,7 @@ class CLI():
                 return None
             if expense_name == "done":
                 break
-            user_data.append(expense_name)
+            user_data['name'] = expense_name
             
             # Read expense amount:
             expense_map = database._search_expenses(expense_item=expense_name)
@@ -369,7 +377,7 @@ class CLI():
                 return None
             if expense_amount == "done":
                 break
-            user_data.append(expense_amount)
+            user_data['amount'] = expense_amount
             
             # Read expense type:
             if "type" in expense_map.keys():
@@ -381,7 +389,7 @@ class CLI():
                     return None
                 if expense_amount == "done":
                     break
-                user_data.append(expense_type)
+                user_data['type'] = expense_type
             
             # Read category id:
             if "category_id" in expense_map.keys():
@@ -400,7 +408,7 @@ class CLI():
                     return None
                 if expense_category_id == "done":
                     break
-                user_data.append(expense_category_id)
+                user_data['category_id'] = expense_category_id
             
             if "details" in expense_map.keys():
                 expense_details = self._read_expense_details()
@@ -409,7 +417,7 @@ class CLI():
                     return None
                 if expense_details == "done":
                     break
-                user_data.append(expense_details)
+                user_data['details'] = expense_details
             
             expenses.append(user_data)
             print("Expense recorded.")
@@ -470,7 +478,7 @@ class CLI():
         # Calculate receipt total:
         receipt_total = 0
         for expense in expense_user_data:
-            amount = expense[1]
+            amount = expense['amount']
             receipt_total += amount
         
         ledger_entries_user_data = self._read_user_ledger_entries(database, receipt_total)
@@ -483,11 +491,11 @@ class CLI():
 
         expenses = []
         for exp in expense_user_data:
-            expense_name = exp[0]
-            expense_amount = exp[1]
-            expense_type = exp[2]
-            expense_category = exp[3]
-            expense_details = exp[4]
+            expense_name = exp['name']
+            expense_amount = exp['amount']
+            expense_type = exp.get('type', None)
+            expense_category = exp.get('category_id', None)
+            expense_details = exp.get('details', None)
             expense = Expense(item=expense_name, amount=f"{expense_amount:.2f}", type=expense_type,\
                             details=expense_details, receipt=receipt, category_id=expense_category)
             expenses.append(expense)
@@ -502,7 +510,8 @@ class CLI():
         transaction = ExpenseTransaction(receipt=receipt, expenses=expenses, ledger_entries=ledger_entries)
         return transaction
 
-    def _read_user_paystub(self) -> list:
+    @staticmethod
+    def _read_user_paystub() -> list:
         """
         Reads all data required from user to initialize a paystub object.
 
@@ -526,6 +535,7 @@ class CLI():
             return None
         return [paystub_date, paystub_payer]
 
+    @staticmethod
     def _read_user_incomes(self) -> list:
         """
         Reads all data required from user to initialize an income object.
@@ -559,7 +569,8 @@ class CLI():
             incomes.append([income_amount, income_details])
         return incomes
 
-    def _read_user_paystub_ledger_entries(self, database: Database, paystub_total: float) -> list:
+    @staticmethod
+    def _read_user_paystub_ledger_entries(database: Database, paystub_total: float) -> list:
         """
         Reads all data required from user to initialize a paystub_entry object.
 
@@ -659,6 +670,20 @@ class CLI():
     def run(self) -> None:
         # initialize prompt session
         pass
+        # while True:
+        #     choice = self.main_menu.run()
+        #     if choice == 1:
+        #         self.insert_expense_transactions(self.database)
+        #     elif choice == 2:
+        #         self.insert_income_transactions(self.database)
+        #     elif choice == 3:
+        #         self.print_table(self.table_menu, self.database)
+        #     elif choice == 4:
+        #         self.delete_row(self.index_menu)
+        #     elif choice == 5:
+        #         self.execute_sql_query(self.database)
+        #     elif choice == 6:
+        #             self.exit()
     
     def _initialize_db(self, db: Database) -> None:
         # Initialize budget database

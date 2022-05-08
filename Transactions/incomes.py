@@ -46,7 +46,7 @@ class Income:
     """
     amount: str
     paystub: Paystub
-    details: str
+    details: str = None
 
 
 @dataclass

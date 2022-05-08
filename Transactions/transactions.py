@@ -53,27 +53,29 @@ class ExpenseTransaction(Transaction):
         with database._create_connection() as c:
             c.execute("begin")
             try:
+                # Inserting receipt
                 receipt_cols = ", ".join(str(i) for i in list(self.receipt.__dict__.keys()))
                 receipt_vals = ", ".join("\'" + str(i) + "\'" for i in list(self.receipt.__dict__.values()))
-
                 c.execute(f"""INSERT INTO receipts ({receipt_cols}) VALUES ({receipt_vals})""")
 
+                # Inserting expenses:
+                # Getting receipt id for the inserted receipt
                 receipt_id = c.execute(f"""SELECT last_insert_rowid()""").fetchone()[0]
+                # Inserting expenses
                 for expense in self.expenses:
-                    expense_cols = list(expense.__dict__.keys())
-                    expense_cols = ", ".join(str(i) if i != "receipt" else "receipt_id" for i in expense_cols)
-                    expense_vals = list(expense.__dict__.values())
-                    expense_vals = expense_vals[:4] + [receipt_id] + [expense_vals[5]]
-                    expense_vals = ", ".join("\'" + str(i) + "\'" for i in expense_vals)
+                    expense_cols = [col for col in expense.__dict__.keys() if expense.__dict__[col] is not None]
+                    expense_cols_str = ", ".join(str(i) if i != "receipt" else "receipt_id" for i in expense_cols)
+                    expense_vals = [val for val in expense.__dict__.values() if val is not None]
+                    expense_vals_str = ", ".join("\'" + str(val) + "\'" if not isinstance(val, Receipt) else str(receipt_id) for val in expense_vals )
+                    c.execute(f"""INSERT INTO expenses ({expense_cols_str}) VALUES ({expense_vals_str})""")
 
-                    c.execute(f"""INSERT INTO expenses ({expense_cols}) VALUES ({expense_vals})""")
+                # Inserting ledger entries
                 for ledger_entry in self.ledger_entries:
-                    ledger_cols = list(ledger_entry.__dict__.keys())
-                    ledger_cols = ", ".join(str(i) if i != "receipt" else "receipt_id" for i in ledger_cols)
-                    ledger_vals = list(ledger_entry.__dict__.values())
-                    ledger_vals = [ledger_vals[0]] + [receipt_id] + [ledger_vals[2]]
-                    ledger_vals = ", ".join("\'" + str(i) + "\'" for i in ledger_vals)
-                    c.execute(f"""INSERT INTO ledger ({ledger_cols}) VALUES ({ledger_vals})""")
+                    ledger_cols = [col for col in ledger_entry.__dict__.keys() if ledger_entry.__dict__[col] is not None]
+                    ledger_cols_str = ", ".join(str(i) if i != "receipt" else "receipt_id" for i in ledger_cols)
+                    ledger_vals = [val for val in ledger_entry.__dict__.values() if val is not None]
+                    ledger_vals_str = ", ".join("\'" + str(val) + "\'" if not isinstance(val, Receipt) else str(receipt_id) for val in ledger_vals )
+                    c.execute(f"""INSERT INTO ledger ({ledger_cols_str}) VALUES ({ledger_vals_str})""")
 
                 c.execute("commit")
             except sqlite3.OperationalError as e:

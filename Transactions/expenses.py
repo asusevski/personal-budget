@@ -55,10 +55,10 @@ class Expense:
     """
     item: str
     amount: str
-    type: str
-    details: str
     receipt: Receipt
-    category_id: int
+    type: str = None
+    category_id: int = None
+    details: str = None
 
 
 @dataclass
