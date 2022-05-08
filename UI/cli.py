@@ -348,6 +348,7 @@ class CLI():
         #expense_category_completer = FuzzyWordCompleter(list(set(all_categories_map['category'])))
         expenses = []
         while True:
+            user_data = []
             # Autocompletion for expense names:
             expense_map = database._search_expenses()
 
@@ -358,6 +359,7 @@ class CLI():
                 return None
             if expense_name == "done":
                 break
+            user_data.append(expense_name)
             
             # Read expense amount:
             expense_map = database._search_expenses(expense_item=expense_name)
@@ -367,41 +369,49 @@ class CLI():
                 return None
             if expense_amount == "done":
                 break
+            user_data.append(expense_amount)
             
             # Read expense type:
-            expense_types = ["want", "need", "savings"]
-            expense_type_completer = FuzzyCompleter(CustomCompleter(expense_types))
-            expense_type = self._read_expense_type(expense_name, expense_types, expense_type_completer)
-            if not expense_amount:
-                return None
-            if expense_amount == "done":
-                break
+            if "type" in expense_map.keys():
+                all_expense_types = ["want", "need", "savings"]
+                expense_types = expense_map['type']
+                expense_type_completer = FuzzyCompleter(CustomCompleter(all_expense_types))
+                expense_type = self._read_expense_type(expense_name, expense_types, expense_type_completer)
+                if not expense_amount:
+                    return None
+                if expense_amount == "done":
+                    break
+                user_data.append(expense_type)
             
             # Read category id:
-            categories_map = database._search_categories()
-            expense_categories = expense_map['category_id']
-            category_completer = FuzzyCompleter(CustomCompleter(expense_categories))
-            subcategory_completer = FuzzyCompleter(CustomCompleter(categories_map['subcategory']))
-            expense_category_id = self._read_expense_category(
-                database, 
-                expense_name, 
-                expense_categories, 
-                categories_map, 
-                category_completer, 
-                subcategory_completer)
-            if not expense_category_id:
-                return None
-            if expense_category_id == "done":
-                break
+            if "category_id" in expense_map.keys():
+                categories_map = database._search_categories()
+                expense_categories = expense_map['category_id']
+                category_completer = FuzzyCompleter(CustomCompleter(expense_categories))
+                subcategory_completer = FuzzyCompleter(CustomCompleter(categories_map['subcategory']))
+                expense_category_id = self._read_expense_category(
+                    database, 
+                    expense_name, 
+                    expense_categories, 
+                    categories_map, 
+                    category_completer, 
+                    subcategory_completer)
+                if not expense_category_id:
+                    return None
+                if expense_category_id == "done":
+                    break
+                user_data.append(expense_category_id)
             
-            expense_details = self._read_expense_details()
-            # Need to check if user returned an empty string or "None". None = user quit early and empty string = user entered nothing
-            if not isinstance(expense_details, str) and not expense_details:
-                return None
-            if expense_details == "done":
-                break
+            if "details" in expense_map.keys():
+                expense_details = self._read_expense_details()
+                # Need to check if user returned an empty string or "None". None = user quit early and empty string = user entered nothing
+                if not isinstance(expense_details, str) and not expense_details:
+                    return None
+                if expense_details == "done":
+                    break
+                user_data.append(expense_details)
             
-            expenses.append([expense_name, expense_amount, expense_type, expense_category_id, expense_details])
+            expenses.append(user_data)
             print("Expense recorded.")
 
         return expenses
