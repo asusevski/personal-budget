@@ -138,7 +138,7 @@ class Database:
             row_id = c.execute(f"""SELECT last_insert_rowid()""").fetchone()[0]
             return row_id
 
-    def _create_empty_database(self, path, **kwargs):
+    def _create_empty_database(self, path, excluded_cols: list = []) -> None:
         self.path = path
         with self._create_connection() as c:
             # Payment types table (stores the names of the payment types eg: Visa, Cash, etc...)
@@ -163,13 +163,13 @@ class Database:
             }
             expenses = "CREATE TABLE IF NOT EXISTS expenses ("
             for key, value in create_expense_commands.items():
-                if key not in kwargs:
-                    if key == "category_id_fk" and "category_id" in kwargs:
+                if key not in excluded_cols:
+                    if key == "category_id_fk" and "category_id" in excluded_cols:
                         continue
                     expenses += f"{value}, "
             expenses = expenses[:-2] + ")"
 
-            if "category_id" not in kwargs:
+            if "category_id" not in excluded_cols:
                 c.execute("""CREATE TABLE IF NOT EXISTS categories (
                     id INTEGER PRIMARY KEY,
                     category TEXT NOT NULL,
@@ -200,7 +200,7 @@ class Database:
             )""")
             
             # Income table (stores details about income eg: income from a job, etc...)
-            if "income_details" not in kwargs:
+            if "income_details" not in excluded_cols:
                 c.execute("""CREATE TABLE IF NOT EXISTS incomes (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     amount REAL NOT NULL,
@@ -235,6 +235,17 @@ class Database:
                 FOREIGN KEY (account_id) REFERENCES accounts(id)
             )""")
 
+    def _get_tables(self) -> list:
+        """"
+        Returns a list of all tables in the database.
+
+        Returns:
+            list: A list of all tables in the database.
+        """
+        with self._create_connection() as c:
+            c.execute("SELECT name FROM sqlite_master WHERE type='table'")
+            # For some reason, "sqlite_sequence" is in the list of tables so we filter it out
+            return [table[0] for table in c.fetchall() if table[0] != "sqlite_sequence"]
 
     def query_db(self, sql_query: str) -> list:
         """
@@ -271,13 +282,13 @@ class Database:
         with self._create_connection() as c:
             if not expense_item:
                 c.execute(f"""
-                SELECT e.id, item, amount, type, receipt_id, category_id, details  \
+                SELECT *  \
                     FROM receipts INNER JOIN (SELECT * FROM expenses e1 WHERE NOT EXISTS \
                         (SELECT * FROM expenses e2 WHERE e1.item = e2.item and e2.id < e1.id)) e ON receipts.id = e.receipt_id\
                     WHERE JulianDay('now') - JulianDay(date) <= {days}""")
             else:
                 c.execute(f"""
-                SELECT e.id, item, amount, type, receipt_id, category_id, details\
+                SELECT *\
                     FROM receipts INNER JOIN (SELECT * FROM expenses e1 WHERE NOT EXISTS \
                         (SELECT * FROM expenses e2 WHERE e1.item = e2.item and e2.id < e1.id)) e ON receipts.id = e.receipt_id\
                     WHERE JulianDay('now') - JulianDay(date) <= {days} AND item = '{expense_item}'""")

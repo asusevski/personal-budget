@@ -7,7 +7,7 @@ class UI(Protocol):
     def run(self) -> None:
         ...
 
-    def initialize_db(self) -> None:
+    def _initialize_db(self) -> None:
         ...
 
     def insert_expense_transactions(self,  database: Database) -> None:

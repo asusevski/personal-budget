@@ -1,4 +1,4 @@
-from prompt_toolkit.completion import Completer, Completion #, FuzzyCompleter
+from prompt_toolkit.completion import Completer, Completion
 
 
 class CustomCompleter(Completer):

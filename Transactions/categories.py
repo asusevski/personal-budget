@@ -1,6 +1,5 @@
 from dataclasses import dataclass
 from Database.database import Database
-#from Database.manage_database import _insert_into_table
 
 
 @dataclass

@@ -1,9 +1,6 @@
 from collections import Counter
 from Database.database import Database
-# from Database.manage_database import delete_row, initialize_empty_db, print_table, query_db
-# from Database.manage_database import print_table, _search_categories, _search_expenses
 import datetime
-from UI.cli_autocompleter import CustomCompleter
 from prompt_toolkit.completion import FuzzyCompleter
 from prompt_toolkit.shortcuts import prompt
 import sys
@@ -11,6 +8,7 @@ from Transactions.categories import Account, ExpenseCategory
 from Transactions.expenses import Expense, LedgerEntry, Receipt
 from Transactions.incomes import Income, Paystub, PaystubLedger
 from Transactions.transactions import IncomeTransaction, ExpenseTransaction
+from UI.cli_autocompleter import CustomCompleter
 from UI.menu import Menu
 
 
@@ -163,6 +161,7 @@ class CLI():
 
         #expense_types = list(set(expense_map['type']))
         expense_types_no_duplicates = list(set(expense_types))
+        print(expense_types_no_duplicates)
         if expense_types_no_duplicates:
             type_counter = Counter(expense_types_no_duplicates)
             most_common_type = type_counter.most_common(1)[0][0]
@@ -214,7 +213,7 @@ class CLI():
         database.print_table("categories")
 
         expense_categories_no_duplicates = list(set(expense_categories))
-
+        print(expense_categories_no_duplicates)
         if expense_categories_no_duplicates:
             existing_expense_category_map = database._search_categories(expense_categories_no_duplicates)
 
@@ -651,7 +650,7 @@ class CLI():
         # initialize prompt session
         pass
     
-    def initialize_db(self, db: Database) -> None:
+    def _initialize_db(self, db: Database) -> None:
         # Initialize budget database
         print("No database found, creating a new database...")
         print("Enter database name (default name is budget): ")
@@ -665,8 +664,71 @@ class CLI():
         if database_name[-3:] != ".db" or ".sqlite" not in database_name:
             database_name += ".db"
 
+        # Adding path to Database dir
+        database_path = "./Database/" + database_name
+
+        # Optional columns:
+        excluded_cols = []
+        print("Would you like to keep track of the following columns? (y/n)")
+
+        # Expense type:
+        print("Expense type (ie: for each expense, would you like to input if the expense is a want, need, or savings expense) (y/n):")
+        expense_type = input("> ")
+        valid = False
+        while not valid:
+            if expense_type.lower() == "n":
+                excluded_cols.append("type")
+                valid = True
+            elif expense_type.lower() == "y":
+                valid = True
+            else:
+                print("Invalid input, please enter 'y' or 'n': ")
+                expense_type = input("> ")
+
+        # Expense category:
+        print("Expense category (ie: a category table would be created with a category and a subcategory column. This would allow you to categorize each expense (y/n):")
+        expense_category = input("> ")
+        valid = False
+        while not valid:
+            if expense_category.lower() == "n":
+                excluded_cols.append("category_id")
+                valid = True
+            elif expense_category.lower() == "y":
+                valid = True
+            else:
+                print("Invalid input, please enter 'y' or 'n': ")
+                expense_category = input("> ")
+
+        # Expense details:
+        print("Expense details (ie: when entering expenses, there would be an option to enter any details about the expense (y/n):")
+        expense_details = input("> ")
+        valid = False
+        while not valid:
+            if expense_details.lower() == "n":
+                excluded_cols.append("details")
+                valid = True
+            elif expense_details.lower() == "y":
+                valid = True
+            else:
+                print("Invalid input, please enter 'y' or 'n': ")
+                expense_details = input("> ")
+
+        # Income details:
+        print("Income details (ie: when entering incomes, there would be an option to enter any details about the income (y/n):")
+        income_details = input("> ")
+        valid = False
+        while not valid:
+            if income_details.lower() == "n":
+                excluded_cols.append("income_details")
+                valid = True
+            elif income_details.lower() == "y":
+                valid = True
+            else:
+                print("Invalid input, please enter 'y' or 'n': ")
+                income_details = input("> ")
+        
         # Initialize empty database
-        db._create_empty_database()
+        db._create_empty_database(path=database_path, excluded_cols=excluded_cols)
 
         # Enter payment types:
         print("Initializing accounts...")
@@ -678,26 +740,27 @@ class CLI():
             print("Enter account description (can be left blank): ")
             account_description = input("> ")
             account = Account(payment_name, account_description)
-            account.insert_into_db(database_name)
+            account.insert_into_db(db)
 
-        print("""Initializing expense categories...
-        
+        if "category_id" not in excluded_cols:
+            print("""Initializing expense categories...
+            
 Each category entry will have a category and subcategory.
 The category will be a broad categorization and the subcategory, an optional field, 
 will be used to make the category more clear (particularly useful for groceries -- one may 
 want to have the category be listed as \'groceries\' and the subcategory be \'chicken\', for example).
-        
-        """)
+            
+            """)
 
-        while True:
-            print("Enter category name (eg: grocery, bills, etc...) or q if you are done entering categories: ")
-            category_name = input("> ")
-            if category_name == "" or category_name == "q":
-                break
-            print("Enter subcategory (can be left blank): ")
-            subcategory = input("> ")
-            expense_category = ExpenseCategory(category_name, subcategory)
-            expense_category.insert_into_db(database_name)
+            while True:
+                print("Enter category name (eg: grocery, bills, etc...) or q if you are done entering categories: ")
+                category_name = input("> ")
+                if category_name == "" or category_name == "q":
+                    break
+                print("Enter subcategory (can be left blank): ")
+                subcategory = input("> ")
+                expense_category = ExpenseCategory(category_name, subcategory)
+                expense_category.insert_into_db(database_name)
 
     def insert_expense_transactions(self, database_name: str) -> None:
         print("Enter q at any time to stop entering transactions.")
