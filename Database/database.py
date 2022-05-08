@@ -7,56 +7,6 @@ import re
 import sqlite3
 
 
-# HELPERS
-def initialize_db() -> None:
-    # Initialize budget database
-    print("No database found, creating new database...")
-    print("Enter database name (default name is budget): ")
-    database_name = input("> ")
-
-    # If no custome database name is entered, use default name
-    if database_name == "":
-        database_name = "budget"
-
-    # Adding suffix to database name
-    if database_name[-3:] != ".db" or ".sqlite" not in database_name:
-        database_name += ".db"
-
-    # Initialize empty database
-    initialize_empty_db(database_name)
-
-    # Enter payment types:
-    print("Initializing accounts...")
-    while True:
-        print("Enter account name (eg: VisaXXXX, Cash, Checking, Bitcoin, etc..) or q if you are done entering accounts: ")
-        payment_name = input("> ")
-        if payment_name == "" or payment_name.lower() == "q":
-            break
-        print("Enter account description (can be left blank): ")
-        account_description = input("> ")
-        account = Account(payment_name, account_description)
-        account.insert_into_db(database_name)
-
-    print("""Initializing expense categories...
-    
-Each category entry will have a category and subcategory.
-The category will be a broad categorization and the subcategory, an optional field, 
-will be used to make the category more clear (particularly useful for groceries -- one may 
-want to have the category be listed as \'groceries\' and the subcategory be \'chicken\', for example).
-    
-    """)
-
-    while True:
-        print("Enter category name (eg: grocery, bills, etc...) or q if you are done entering categories: ")
-        category_name = input("> ")
-        if category_name == "" or category_name == "q":
-            break
-        print("Enter subcategory (can be left blank): ")
-        subcategory = input("> ")
-        expense_category = ExpenseCategory(category_name, subcategory)
-        expense_category.insert_into_db(database_name)
-
-
 @dataclass
 class Database:
     def __init__(self):
@@ -118,7 +68,7 @@ class Database:
             sql_query: The SQL query to use to print the table (default is none, which prints the entire table).
             cols: The names of the columns to print (default is none, which prints all columns).
         """
-        with self._create_connection(self.path) as c:
+        with self._create_connection() as c:
 
             if sql_query != "":
                 try:
@@ -165,7 +115,7 @@ class Database:
             The id of the row inserted.
         """
         logging.basicConfig(level=logging.INFO)
-        with self._create_connection(self.path) as c:
+        with self._create_connection() as c:
 
             # Check that the values are not empty
             if len(values) == 0:
@@ -285,6 +235,7 @@ class Database:
                 FOREIGN KEY (account_id) REFERENCES accounts(id)
             )""")
 
+
     def query_db(self, sql_query: str) -> list:
         """
         Query the database and return the results.
@@ -296,7 +247,7 @@ class Database:
         Returns:
             A list of the results of the query.
         """
-        with self._create_connection(self.path) as c:
+        with self._create_connection() as c:
             try:
                 c.execute(sql_query)
             except sqlite3.OperationalError as e:
@@ -317,7 +268,7 @@ class Database:
         Returns:
             A list of the expense names that fit the criteria.
         """
-        with self._create_connection(self.path) as c:
+        with self._create_connection() as c:
             if not expense_item:
                 c.execute(f"""
                 SELECT e.id, item, amount, type, receipt_id, category_id, details  \
@@ -347,7 +298,7 @@ class Database:
         Returns:
             A dictionary of values for the list of category ids. If no list is specified, all categories are returned.
         """
-        with self._create_connection(self.path) as c:
+        with self._create_connection() as c:
             if not category_ids:
                 c.execute("SELECT * FROM categories")
             else:
@@ -365,5 +316,5 @@ class Database:
         Args:
             database_name: The name of the database to delete from.
         """
-        with self._create_connection(self.path) as c:
+        with self._create_connection() as c:
             c.execute(f"DELETE FROM {table_name} WHERE id = '{row_id}'")

@@ -29,9 +29,9 @@ class Program:
             if choice == 1:
                 self.ui.initialize_db()
             elif choice == 2:
-                self.ui.insert_expense_transactions()
+                self.ui.insert_expense_transactions(self.database)
             elif choice == 3:
-                self.ui.insert_income_transactions()
+                self.ui.insert_income_transactions(self.database)
             elif choice == 4:
                 self.ui.print_table(self.table_menu)
             elif choice == 5:

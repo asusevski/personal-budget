@@ -353,7 +353,7 @@ class CLI():
             expense_map = database._search_expenses()
 
             # Read expense name:
-            expense_name_completer = FuzzyCompleter(CustomCompleter(expense_map['name']))
+            expense_name_completer = FuzzyCompleter(CustomCompleter(expense_map['item']))
             expense_name = self._read_expense_name(expense_name_completer)
             if not expense_name:
                 return None
@@ -362,7 +362,7 @@ class CLI():
             
             # Read expense amount:
             expense_map = database._search_expenses(expense_item=expense_name)
-            expense_amount_completer = FuzzyCompleter(CustomCompleter(expense_map['amount']))
+            expense_amount_completer = FuzzyCompleter(CustomCompleter(list(str(x) for x in set(expense_map['amount']))))
             expense_amount = self._read_expense_amount(expense_amount_completer)
             if not expense_amount:
                 return None
@@ -380,10 +380,9 @@ class CLI():
             
             # Read category id:
             categories_map = database._search_categories()
-            expense_categories = expense_map['category']
-            expense_subcategories = expense_map['subcategory']
+            expense_categories = expense_map['category_id']
             category_completer = FuzzyCompleter(CustomCompleter(expense_categories))
-            subcategory_completer = FuzzyCompleter(CustomCompleter(expense_subcategories))
+            subcategory_completer = FuzzyCompleter(CustomCompleter(categories_map['subcategory']))
             expense_category_id = self._read_expense_category(
                 database, 
                 expense_name, 
@@ -413,8 +412,6 @@ class CLI():
         tol = 10e-3
         ledger_entries = []
         while abs(receipt_total) >= tol:
-            print(receipt_total)
-            print(type(receipt_total))
             print("Remaining on receipt: ${:.2f}".format(receipt_total))
             print("Select account id used to pay (see accounts below): ")
             database.print_table("accounts")
@@ -717,37 +714,36 @@ want to have the category be listed as \'groceries\' and the subcategory be \'ch
                 else:
                     print(f"Transaction failed to be added. Error message: {retval}")
 
-    def insert_income_transactions(self, database_name: str) -> None:
+    def insert_income_transactions(self, database: Database) -> None:
         print("Enter q at any time to stop entering income transactions.")
         while True:
-            income_transaction = self._read_income_transaction_from_user(database_name)
+            income_transaction = self._read_income_transaction_from_user(database)
             if not income_transaction:
                 print("Transaction cancelled.")
                 break
             else:
                 # Insert transaction into database
-                retval = income_transaction.execute(database_name)
+                retval = income_transaction.execute(database)
                 if not retval:
                     print("Income transaction added.")
                 else:
                     print(f"Income transaction failed to be added. Error message: {retval}")
     
-    def print_table(self, menu: Menu, database_name: str) -> None:
+    def print_table(self, menu: Menu, database: Database) -> None:
         table_name = menu.run()
+        database.print_table(table_name)
 
-        print_table(database_name, table_name)
+    def delete_row(self, menu: Menu, database: Database) -> None:
+        table_name, row_id = menu.run(database)
 
-    def delete_row(self, menu: Menu, database_name: str) -> None:
-        table_name, row_id = menu.run(database_name)
-
-        delete_row(database_name, table_name, row_id)
+        database.delete_row(table_name, row_id)
         print("Row deleted.")
 
-    def execute_sql_query(self, database_name: str) -> None:
+    def execute_sql_query(self, database: Database) -> None:
         print("Enter SQL query: ")
         sql_query = input("> ")
         print("Executing query...")
-        vals = query_db(database_name, sql_query)
+        vals = database.query_db(sql_query)
         print(f"Results: {vals}")
 
     def exit(self) -> None:

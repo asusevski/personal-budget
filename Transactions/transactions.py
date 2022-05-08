@@ -50,7 +50,7 @@ class ExpenseTransaction(Transaction):
         Effects:
             Modifies table 'receipts', 'ledger' and 'expenses' in the database.
         """
-        with database._create_connection(database.path) as c:
+        with database._create_connection() as c:
             c.execute("begin")
             try:
                 receipt_cols = ", ".join(str(i) for i in list(self.receipt.__dict__.keys()))
@@ -115,7 +115,7 @@ class IncomeTransaction(Transaction):
         Effects:
             Modifies table 'paystubs', 'paystub_ledger' and 'incomes' in the database.
         """
-        with database._create_connection(database.path) as c:
+        with database._create_connection() as c:
             c.execute("begin")
             try:
                 paystub_cols = ", ".join(str(i) for i in list(self.paystub.__dict__.keys()))
