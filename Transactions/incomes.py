@@ -1,5 +1,6 @@
 from dataclasses import dataclass
-from Database.manage_database import _insert_into_table
+from Database.database import Database
+#from Database.manage_database import _insert_into_table
 
 
 @dataclass
@@ -20,7 +21,7 @@ class Paystub:
     date: str
     payer: str
 
-    def insert_into_db(self, database_name: str) -> int:
+    def insert_into_db(self, database: Database) -> int:
         """
         Insert the receipt into the database.
 
@@ -33,7 +34,7 @@ class Paystub:
         Effects:
             Modifies table 'receipts' in the database.
         """
-        paystub_id = _insert_into_table(database_name, 'paystub', cols=['total', 'date', 'payer'], \
+        paystub_id = database._insert_into_table('paystub', cols=['total', 'date', 'payer'], \
                           values=[self.total, self.date, self.payer])
         return paystub_id
 

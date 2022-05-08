@@ -1,4 +1,5 @@
-from Database.manage_database import print_table
+#from Database.manage_database import print_table
+from Database.database import Database
 from typing import Tuple
 
 
@@ -68,8 +69,8 @@ class IndexMenu(TableMenu):
     def __init__(self, options: list):
         super().__init__(options)
 
-    def read_index(self, database_name: str, table_name: str) -> int:
-        print_table(database_name, table_name)
+    def read_index(self, database: Database, table_name: str) -> int:
+        database.print_table(table_name)
         print(f"Enter index of row to delete:")
         index = input("> ")
         if not index.isnumeric():

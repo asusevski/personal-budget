@@ -1,7 +1,8 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from Database.database import Database
 from Transactions.expenses import Expense, LedgerEntry, Receipt
-from Database.manage_database import _create_connection
+#from Database.manage_database import _create_connection
 from Transactions.incomes import Income, Paystub, PaystubLedger
 import sqlite3
 
@@ -33,7 +34,7 @@ class ExpenseTransaction(Transaction):
     expenses: list[Expense]
     ledger_entries: list[LedgerEntry]
 
-    def execute(self, database_name: str) -> None:
+    def execute(self, database: Database) -> None:
         """
         Updates the database with the information about a transaction.
 
@@ -49,7 +50,7 @@ class ExpenseTransaction(Transaction):
         Effects:
             Modifies table 'receipts', 'ledger' and 'expenses' in the database.
         """
-        with _create_connection(database_name) as c:
+        with database._create_connection(database.path) as c:
             c.execute("begin")
             try:
                 receipt_cols = ", ".join(str(i) for i in list(self.receipt.__dict__.keys()))
@@ -79,7 +80,7 @@ class ExpenseTransaction(Transaction):
                 print(e)
                 c.execute("rollback")
                 return e
-                
+
 
 @dataclass
 class IncomeTransaction(Transaction):
@@ -101,7 +102,7 @@ class IncomeTransaction(Transaction):
     income_events: list[Income]
     ledger_entries: list[PaystubLedger]
 
-    def execute(self, database_name: str) -> None:
+    def execute(self, database: Database) -> None:
         """
         Updates the database with the information about a transaction.
 
@@ -114,7 +115,7 @@ class IncomeTransaction(Transaction):
         Effects:
             Modifies table 'paystubs', 'paystub_ledger' and 'incomes' in the database.
         """
-        with _create_connection(database_name) as c:
+        with database._create_connection(database.path) as c:
             c.execute("begin")
             try:
                 paystub_cols = ", ".join(str(i) for i in list(self.paystub.__dict__.keys()))
