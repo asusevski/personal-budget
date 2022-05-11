@@ -50,13 +50,6 @@ def _apply_tax(expense_amount: float) -> float:
 
 
 class CLI():
-    # def __init__(self, table_options: list) -> None:
-    #     main_menu_options = ["Insert expense transaction", "Insert income transaction", "Print table", "Delete row", \
-    #                      "Execute arbitrary sql query", "Exit"]
-    #     self.main_menu = MainMenu(options=main_menu_options)
-    #     self.table_menu = TableMenu(options=table_options)
-    #     self.index_menu = IndexMenu(options=table_options)
-
     @staticmethod
     def _read_user_receipt() -> list:
         """
@@ -130,9 +123,6 @@ class CLI():
     @staticmethod
     def _read_expense_amount(expense_amount_completer: FuzzyCompleter) -> float:
         print("Enter expense amount ($): ")
-        # it appears autocompleter requires strings, not float
-        # expense_amounts = list(str(x) for x in set(expense_map['amount']))
-        # completer = FuzzyCompleter(CustomCompleter(expense_amounts))
         expense_amount = prompt(
             "> ",
             completer=expense_amount_completer,
@@ -511,7 +501,7 @@ class CLI():
         return transaction
 
     @staticmethod
-    def _read_user_paystub() -> list:
+    def _read_user_paystub(paystub_payer_completer: FuzzyCompleter) -> list:
         """
         Reads all data required from user to initialize a paystub object.
 
@@ -528,15 +518,48 @@ class CLI():
         if paystub_date.lower() == "q":
             return None
 
-        # Get receipt location:
-        print("Enter payer of the income: ")
-        paystub_payer = input("> ")
+        valid = False
+        while not valid:
+            try:
+                datetime.datetime.strptime(paystub_date, '%Y-%m-%d')
+                valid = True
+            except ValueError:
+                print("Invalid date format. Try again.")
+                paystub_date = input("> ")
+                if paystub_date.lower() == "q":
+                    return None
+
+        # Get paystub payer:
+        paystub_payer = prompt(
+            "> ",
+            completer=paystub_payer_completer,
+            complete_while_typing=True
+        )
         if paystub_payer.lower() == "q":
             return None
-        return [paystub_date, paystub_payer]
+        if paystub_payer.lower() == "done":
+            return "done"
+        
+        # Enforce that the expense name cannot be empty string
+        valid = False
+        while not valid:
+            if not paystub_payer:
+                print("Expense name cannot be empty.")
+                paystub_payer = prompt(
+                "> ",
+                completer=paystub_payer_completer,
+                complete_while_typing=True
+                )       
+                if paystub_payer.lower() == "q":
+                    return None
+                if paystub_payer.lower() == "done":
+                    return "done"
+                continue
+            valid = True
+        return paystub_payer
 
     @staticmethod
-    def _read_user_incomes(self) -> list:
+    def _read_user_income_amount(income_amount_completer: FuzzyCompleter) -> float:
         """
         Reads all data required from user to initialize an income object.
 
@@ -552,22 +575,44 @@ class CLI():
             Or None if the user quits early.
 
         """
-        incomes = []
-        while True:
-            print("Enter income amount (enter nothing or \"done\" if done entering income events): ")
-            income_amount = input("> ")
-            if income_amount.lower() == "q":
-                return None
-            if income_amount == "" or income_amount == "done":
-                break
-            
-            print("Enter income details (or enter to continue with no details): ")
-            income_details = input("> ")
-            if income_details.lower() == "q":
-                return None
-            
-            incomes.append([income_amount, income_details])
-        return incomes
+        print("Enter income amount (enter nothing or \"done\" if done entering income events): ")
+        income_amount = prompt(
+        "> ",
+        completer=income_amount_completer,
+        complete_while_typing=True
+        )
+
+        if income_amount.lower() == "q":
+            return None
+        if income_amount == "" or income_amount == "done":
+            return "done"
+
+        valid = False
+        while not valid:
+            try:
+                income_amount = float(income_amount)
+                valid = True
+            except ValueError:
+                print("Invalid amount entered, please try again: ")
+                income_amount = prompt(
+                "> ",
+                completer=income_amount_completer,
+                complete_while_typing=True
+            )          
+                if income_amount.lower() == "q":
+                    return None
+                if income_amount.lower() == "done":
+                    return "done"                   
+        return float(income_amount)
+
+    @staticmethod
+    def _read_user_income_details() -> str:
+        print("Enter income details (or enter to continue with no details): ")
+        income_details = input("> ")
+        if income_details.lower() == "q":
+            return None
+        if income_details == "done":
+            return "done"
 
     @staticmethod
     def _read_user_paystub_ledger_entries(database: Database, paystub_total: float) -> list:
@@ -587,7 +632,7 @@ class CLI():
 
         """
         print("What accounts are being credited through this income event?")
-        tol = 10e-4
+        tol = 10e-3
         paystub_entries = []    
         while abs(paystub_total) >= tol:
             print("Remaining: ${:.2f}".format(paystub_total))
@@ -602,18 +647,34 @@ class CLI():
                 account_name = input("> ")
                 print("Enter account description (or enter to continue with no description): ")
                 account_description = input("> ")
-                payment_type = Account(account_name, account_description)
-                account_id = payment_type.insert_into_db(database)
+                account = Account(account_name, account_description)
+                account_id = account.insert_into_db(database)
             
-            print("How much of the total is being credited to this account?")
-            print("Enter credit amount ($): ")
+            print(f"How much of the remaining ${paystub_total:.2f} is being credited to this account?")
+            print(f"Enter payment amount ($) or press enter if you paid the remaining ${paystub_total:.2f} with acccount id {account_id}: ")
+
             income_amount = input("> ")
             if income_amount.lower() == "q":
                 return None
+            if not income_amount:
+                income_amount = paystub_total
             
             paystub_entries.append([income_amount, account_id])
             paystub_total -= float(income_amount)
         return paystub_entries
+
+    def _read_user_incomes(self, database: Database) -> list:
+        incomes = []
+        while True:
+            user_data = {}
+            # Autocompletion for payer names:
+            # Implement these methods
+            # NOTE: paystub payer typically determines amount (think of a recurring income from a job).
+            # Thus, make sure to allow search_incomes to pass in a paystub payer somehow (we'll need to search for income events paid by a given payer).
+            paystub_map = database._search_paystubs()
+
+            income_map = database._search_incomes()
+            return
 
     def _read_income_transaction_from_user(self, database: Database) -> IncomeTransaction:
         """
