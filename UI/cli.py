@@ -50,11 +50,6 @@ def _apply_tax(expense_amount: float) -> float:
 
 
 class CLI():
-    def __init__(self) -> None:
-        main_menu_options = ["Insert expense transaction", "Insert income transaction", "Print table", "Delete row", \
-                         "Execute arbitrary sql query", "Exit"]
-        self.main_menu = MainMenu(main_menu_options)    
-
     @staticmethod
     def _read_user_receipt() -> list:
         """
@@ -735,12 +730,15 @@ class CLI():
 
     def run(self, database: Database) -> None:
         # initialize prompt session !!
+        main_menu_options = ["Insert expense transaction", "Insert income transaction", "Print table", "Delete row", \
+                         "Execute arbitrary sql query", "Exit"]
+        main_menu = MainMenu(main_menu_options)
         table_options = database._get_tables()
         table_menu = TableMenu(options=table_options)
         index_menu = IndexMenu(options=table_options)
 
         while True:
-            choice = self.main_menu.run()
+            choice = main_menu.run()
             if choice == 1:
                 self.insert_expense_transactions(database)
             elif choice == 2:
