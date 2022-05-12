@@ -50,6 +50,11 @@ def _apply_tax(expense_amount: float) -> float:
 
 
 class CLI():
+    def __init__(self) -> None:
+        main_menu_options = ["Insert expense transaction", "Insert income transaction", "Print table", "Delete row", \
+                         "Execute arbitrary sql query", "Exit"]
+        self.main_menu = MainMenu(main_menu_options)    
+
     @staticmethod
     def _read_user_receipt() -> list:
         """
@@ -728,23 +733,26 @@ class CLI():
         transaction = IncomeTransaction(paystub=paystub, income_events=incomes, ledger_entries=paystub_ledger_entries)
         return transaction
 
-    def run(self) -> None:
-        # initialize prompt session
-        pass
-        # while True:
-        #     choice = self.main_menu.run()
-        #     if choice == 1:
-        #         self.insert_expense_transactions(self.database)
-        #     elif choice == 2:
-        #         self.insert_income_transactions(self.database)
-        #     elif choice == 3:
-        #         self.print_table(self.table_menu, self.database)
-        #     elif choice == 4:
-        #         self.delete_row(self.index_menu)
-        #     elif choice == 5:
-        #         self.execute_sql_query(self.database)
-        #     elif choice == 6:
-        #             self.exit()
+    def run(self, database: Database) -> None:
+        # initialize prompt session !!
+        table_options = database._get_tables()
+        table_menu = TableMenu(options=table_options)
+        index_menu = IndexMenu(options=table_options)
+
+        while True:
+            choice = self.main_menu.run()
+            if choice == 1:
+                self.insert_expense_transactions(database)
+            elif choice == 2:
+                self.insert_income_transactions(database)
+            elif choice == 3:
+                self.print_table(table_menu, database)
+            elif choice == 4:
+                self.delete_row(index_menu)
+            elif choice == 5:
+                self.execute_sql_query(database)
+            elif choice == 6:
+                    self.exit()
     
     def _initialize_db(self, db: Database) -> None:
         # Initialize budget database
