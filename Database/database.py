@@ -348,7 +348,7 @@ class Database:
                     result[c.description[col_index][0]].append(col_data)
             return result
 
-    def _search_incomes(self, income_id: int = None) -> dict:
+    def _search_incomes(self, income_id: int = None, payer: str = "") -> dict:
         """
         Search for an income in the database.
 
@@ -364,6 +364,8 @@ class Database:
         with self._create_connection() as c:
             if income_id:
                 c.execute(f"SELECT * FROM incomes WHERE id = {income_id}")
+            elif payer:
+                c.execute(f"SELECT id, amount, details FROM incomes NATURAL JOIN paystubs WHERE payer = '{payer}'")
             else:
                 c.execute("SELECT * FROM incomes")
             result = {col_data[0]: [] for col_data in c.description}

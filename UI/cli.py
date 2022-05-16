@@ -95,7 +95,7 @@ class CLI():
         receipt_location = input("> ")
         if receipt_location.lower() == "q":
             return None
-        return [receipt_date, receipt_location]
+        return {'date': receipt_date, 'location': receipt_location}
 
     @staticmethod
     def _read_expense_name(expense_name_completer: FuzzyCompleter) -> str:
@@ -482,8 +482,8 @@ class CLI():
         if not ledger_entries_user_data:
             return None
         
-        receipt_date = receipt_user_data[0]
-        receipt_location = receipt_user_data[1]
+        receipt_date = receipt_user_data['date']
+        receipt_location = receipt_user_data['location']
         receipt = Receipt(total=f"{receipt_total:.2f}", date=receipt_date, location=receipt_location)
 
         expenses = []
@@ -564,10 +564,14 @@ class CLI():
                     return "done"
                 continue
             valid = True
-        return paystub_payer
+        return {'date': paystub_date, 'payer': paystub_payer}
 
     @staticmethod
-    def _read_user_income_amount(income_amount_completer: FuzzyCompleter) -> float:
+    def _read_user_income_amount(
+        income_amount_completer: FuzzyCompleter, 
+        incomes_existing: dict,
+        payer: str
+        ) -> float:
         """
         Reads all data required from user to initialize an income object.
 
@@ -583,13 +587,27 @@ class CLI():
             Or None if the user quits early.
 
         """
-        print("Enter income amount (enter nothing or \"done\" if done entering income events): ")
+
+        if incomes_existing:
+            # Find most recent amount in incomes_existing
+            # NOTE: we could instead suggest the "most common" amount, but
+            #   the downside of this is that if, in the case of a job you
+            #   get a promotion, it would take forever for it to change
+            #   the most common amount.
+            most_recent = incomes_existing['amount'][-1]
+            print(f"You last entered an income from \033[1m{payer}\033[0m in the amount of \033[1m${most_recent:.2f}\033[0m.")
+            print(f"\033[1mPress enter to accept\033[0m this suggestion or enter a new amount.")
+        print("Enter income amount ($): ")
         income_amount = prompt(
         "> ",
         completer=income_amount_completer,
         complete_while_typing=True
         )
 
+        # User accepts suggestion
+        if incomes_existing and not income_amount:
+            return float(most_recent)
+        
         if income_amount.lower() == "q":
             return None
         if income_amount == "" or income_amount == "done":
@@ -621,6 +639,7 @@ class CLI():
             return None
         if income_details == "done":
             return "done"
+        return income_details
 
     @staticmethod
     def _read_user_paystub_ledger_entries(database: Database, paystub_total: float) -> list:
@@ -671,14 +690,37 @@ class CLI():
             paystub_total -= float(income_amount)
         return paystub_entries
 
-    def _read_user_incomes(self, database: Database) -> list:
+    def _read_user_incomes(self, database: Database, payer: str = "") -> list:
+        incomes_existing = database._search_incomes(payer=payer)
+        incomes_all = database._search_incomes()
+
         incomes = []
         while True:
             user_data = {}
-            paystubs_all = database._search_paystubs()
 
-            income_map = database._search_incomes()
-            return
+            # Read income amount
+            income_amount_completer = FuzzyCompleter(CustomCompleter(list(str(x) for x in set(incomes_all['amount']))))
+            income_amount = self._read_user_income_amount(income_amount_completer, incomes_existing, payer)
+            
+            if not income_amount:
+                return None
+            if income_amount == "done":
+                break
+            user_data['amount'] = income_amount
+
+            # Read income details:
+            if "details" in incomes_all.keys():
+                income_details = self._read_user_income_details()
+                # Need to check if user returned an empty string or "None". None = user quit early and empty string = user entered nothing
+                if not isinstance(income_details, str) and not income_details:
+                    return None
+                if income_details == "done":
+                    break
+                user_data['details'] = income_details
+
+            incomes.append(user_data)
+        
+        return incomes
 
     def _read_income_transaction_from_user(self, database: Database) -> IncomeTransaction:
         """
@@ -698,14 +740,13 @@ class CLI():
         if not paystub_user_data:
             return None
 
-        income_user_data = self._read_user_incomes()
+        income_user_data = self._read_user_incomes(database=database, payer=paystub_user_data['payer'])
         if not income_user_data:
             return None
 
         # Calculate paystub total:
         paystub_total = 0
         for income in income_user_data:
-            print(income)
             amount = float(income[0])
             paystub_total += amount
         
