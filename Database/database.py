@@ -320,6 +320,58 @@ class Database:
                     result[c.description[col_index][0]].append(col_data)
             return result
 
+    def _search_paystubs(self, paystub_id: int = None, payer: str = "", date: str = "") -> dict:
+        """
+        Search for a paystub in the database.
+
+        Args:
+            database_name: The name of the database to search in.
+            paystub_id: The paystub to search for.
+            payer: The payer to search for.
+            date: The date to search for.
+
+        Returns:
+            A dictionary of values for the paystub.
+        """
+        with self._create_connection() as c:
+            if paystub_id:
+                c.execute(f"SELECT * FROM paystubs WHERE id = {paystub_id}")
+            elif payer:
+                c.execute(f"SELECT * FROM paystubs WHERE payer = '{payer}'")
+            elif date:
+                c.execute(f"SELECT * FROM paystubs WHERE date = '{date}'")
+            else:
+                c.execute("SELECT * FROM paystubs")
+            result = {col_data[0]: [] for col_data in c.description}
+            for row in c.fetchall():
+                for col_index, col_data in enumerate(row):
+                    result[c.description[col_index][0]].append(col_data)
+            return result
+
+    def _search_incomes(self, income_id: int = None) -> dict:
+        """
+        Search for an income in the database.
+
+        Args:
+            database_name: The name of the database to search in.
+            income_id: The income to search for.
+            payer: The payer to search for.
+            date: The date to search for.
+
+        Returns:
+            A dictionary of values for the income.
+        """
+        with self._create_connection() as c:
+            if income_id:
+                c.execute(f"SELECT * FROM incomes WHERE id = {income_id}")
+            else:
+                c.execute("SELECT * FROM incomes")
+            result = {col_data[0]: [] for col_data in c.description}
+            for row in c.fetchall():
+                for col_index, col_data in enumerate(row):
+                    result[c.description[col_index][0]].append(col_data)
+            return result
+
     def delete_row(self, table_name: str, row_id: int) -> None:
         """
         Delete a row from the database.

@@ -1,7 +1,6 @@
 from collections import Counter
 from Database.database import Database
 import datetime
-from operator import itemgetter 
 from prompt_toolkit.completion import FuzzyCompleter
 from prompt_toolkit.shortcuts import prompt
 import sys
@@ -20,6 +19,15 @@ HST_TAX_RATE = 0.13
 
 # HELPERS
 def _apply_tax(expense_amount: float) -> float:
+    """
+    _apply_tax takes a float expense amount and returns the amount after tax, if the expense is taxable.
+
+    Args:
+        expense_amount: float, the amount of the expense.
+
+    Returns:
+        float, the amount of the expense after tax, if applicable.
+    """
     print("Is this expense taxable? (y/n): ")
     taxable = input("> ")
     if taxable.lower() == "q":
@@ -47,6 +55,7 @@ def _apply_tax(expense_amount: float) -> float:
                         tax_rate = HST_TAX_RATE
                         valid = True
         expense_amount = float(expense_amount) * (1 + tax_rate)
+        
     return expense_amount
 
 
@@ -91,8 +100,6 @@ class CLI():
     @staticmethod
     def _read_expense_name(expense_name_completer: FuzzyCompleter) -> str:
         print("Enter expense name (enter nothing or \"done\" if done entering expenses): ")
-        #expense_names = list(set(expense_map['item']))
-        #completer = FuzzyCompleter(CustomCompleter(expense_names))
         expense_name = prompt(
             "> ",
             completer=expense_name_completer,
@@ -158,8 +165,7 @@ class CLI():
     def _read_expense_type(expense_name: str, expense_types: list, completer: FuzzyCompleter) -> str:
         print("Enter type of expense (want, need, or savings): ")
 
-        #expense_types = list(set(expense_map['type']))
-        expense_types_no_duplicates = list(set(expense_types))
+        expense_types_no_duplicates = list(dict.fromkeys(expense_types))
         if expense_types_no_duplicates:
             type_counter = Counter(expense_types_no_duplicates)
             most_common_type = type_counter.most_common(1)[0][0]
@@ -167,7 +173,6 @@ class CLI():
             print(f"\033[1mPress enter to accept\033[0m this suggestion or enter \'want\', \'need\', or \'savings\' for {expense_name}.")
 
         all_types = ['want', 'need', 'savings']
-        #completer = FuzzyCompleter(CustomCompleter(all_types))
         expense_type = prompt(
             "> ",
             completer=completer,
@@ -196,16 +201,6 @@ class CLI():
                 return "done"
 
         return expense_type
-
-    # @staticmethod
-    # def _read_expense_category(
-    #     database: Database, 
-    #     expense_name: str, 
-    #     expense_categories: list, 
-    #     category_map: dict, 
-    #     category_completer: FuzzyCompleter,
-    #     subcategory_completer: FuzzyCompleter
-    #     ) -> int:
         
     @staticmethod
     def _read_expense_category(
@@ -235,7 +230,7 @@ class CLI():
         else:
             print("Select a category name or a row id from the table above or enter \"add\" to add a new category: ")
 
-        category_completer = FuzzyCompleter(CustomCompleter(list(set(category_map_existing['category']))))
+        category_completer = FuzzyCompleter(CustomCompleter(list(dict.fromkeys(category_map_all['category']))))
         expense_category = prompt(
             "> ",
             completer=category_completer,
@@ -252,7 +247,7 @@ class CLI():
             return int(expense_category_id)
         
         # Verify user entered a valid input
-        valid_choices = list(set(category_map_all['category'])) + ["q"] + ["add"] + ["done"]
+        valid_choices = list(dict.fromkeys(category_map_all['category'])) + ["q"] + ["add"] + ["done"]
         while not expense_category.strip().isnumeric() and expense_category not in valid_choices:
             print("Invalid entry. Please try again: ")
             expense_category = prompt(
@@ -289,8 +284,6 @@ class CLI():
 
         # Else, the user entered a category name so we need to read the subcategory:
         print("Select a subcategory name from the table above: ")
-        # Unfortunately, since the function that calls this function can't possibly know beforehand what category the user will pick,
-        # we have to create the subcategory completer after receiving user input on what category they want to enter.
 
         # This is pretty unreadable, but it basically finds all potential subcategories that match the category name the user entered.
         subcategory_values = [x for x in category_map_all['subcategory'] if category_map_all['category'][category_map_all['subcategory'].index(x)] == expense_category]
@@ -355,7 +348,6 @@ class CLI():
 
         """
         
-        #expense_category_completer = FuzzyWordCompleter(list(set(all_categories_map['category'])))
         expenses = []
         while True:
             user_data = {}
@@ -398,7 +390,7 @@ class CLI():
                 categories_map_all = database._search_categories()
                 
                 # Getting all category ids that have ever been used to categorize the expense:
-                expence_category_ids = list(set(expense_map['category_id']))
+                expence_category_ids = list(dict.fromkeys(expense_map['category_id']))
 
                 # Need the existing categories for suggestions and need the full categories table for prompt
                 # It is probably suboptimal to call _search_categories twice, but this is how it will remain
@@ -545,6 +537,7 @@ class CLI():
                     return None
 
         # Get paystub payer:
+        print("Enter the name of the payer: ")
         paystub_payer = prompt(
             "> ",
             completer=paystub_payer_completer,
@@ -682,11 +675,7 @@ class CLI():
         incomes = []
         while True:
             user_data = {}
-            # Autocompletion for payer names:
-            # Implement these methods
-            # NOTE: paystub payer typically determines amount (think of a recurring income from a job).
-            # Thus, make sure to allow search_incomes to pass in a paystub payer somehow (we'll need to search for income events paid by a given payer).
-            paystub_map = database._search_paystubs()
+            paystubs_all = database._search_paystubs()
 
             income_map = database._search_incomes()
             return
@@ -702,7 +691,10 @@ class CLI():
             An IncomeTransaction object or None if the user ends input early with 'q' input.
 
         """
-        paystub_user_data = self._read_user_paystub()
+        existing_payers = database._search_paystubs()
+        existing_payers_completer = FuzzyCompleter(CustomCompleter(list(dict.fromkeys(existing_payers['payer']))))
+
+        paystub_user_data = self._read_user_paystub(existing_payers_completer)
         if not paystub_user_data:
             return None
 
