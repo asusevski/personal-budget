@@ -508,7 +508,7 @@ class CLI():
         return transaction
 
     @staticmethod
-    def _read_user_paystub(paystub_payer_completer: FuzzyCompleter) -> list:
+    def _read_user_paystub(paystub_payer_completer: FuzzyCompleter) -> dict:
         """
         Reads all data required from user to initialize a paystub object.
 
@@ -566,9 +566,40 @@ class CLI():
             valid = True
         return {'date': paystub_date, 'payer': paystub_payer}
 
+    # @staticmethod
+    # def _read_user_income_name(income_name_completer: FuzzyCompleter) -> str:
+    #     print("Enter income name (enter nothing or \"done\" if done entering expenses): ")
+    #     income_name = prompt(
+    #         "> ",
+    #         completer=income_name_completer,
+    #         complete_while_typing=True
+    #     )
+    #     if income_name.lower() == "q":
+    #         return None
+    #     if income_name.lower() == "done":
+    #         return "done"
+        
+    #     # Enforce that the expense name cannot be empty string
+    #     valid = False
+    #     while not valid:
+    #         if not income_name:
+    #             print("Expense name cannot be empty.")
+    #             income_name = prompt(
+    #             "> ",
+    #             completer=income_name_completer,
+    #             complete_while_typing=True
+    #             )       
+    #             if income_name.lower() == "q":
+    #                 return None
+    #             if income_name.lower() == "done":
+    #                 return "done"
+    #             continue
+    #         valid = True
+    #     return income_name
+
     @staticmethod
     def _read_user_income_amount(
-        income_amount_completer: FuzzyCompleter, 
+        income_amount_completer: FuzzyCompleter,
         incomes_existing: dict,
         payer: str
         ) -> float:
@@ -587,7 +618,6 @@ class CLI():
             Or None if the user quits early.
 
         """
-
         if incomes_existing:
             # Find most recent amount in incomes_existing
             # NOTE: we could instead suggest the "most common" amount, but
@@ -628,7 +658,7 @@ class CLI():
                 if income_amount.lower() == "q":
                     return None
                 if income_amount.lower() == "done":
-                    return "done"                   
+                    return "done"               
         return float(income_amount)
 
     @staticmethod
@@ -678,7 +708,7 @@ class CLI():
                 account_id = account.insert_into_db(database)
             
             print(f"How much of the remaining ${paystub_total:.2f} is being credited to this account?")
-            print(f"Enter payment amount ($) or press enter if you paid the remaining ${paystub_total:.2f} with acccount id {account_id}: ")
+            print(f"Enter payment amount ($) or press enter if you received the remaining ${paystub_total:.2f} with acccount id {account_id}: ")
 
             income_amount = input("> ")
             if income_amount.lower() == "q":
@@ -695,30 +725,27 @@ class CLI():
         incomes_all = database._search_incomes()
 
         incomes = []
-        while True:
-            user_data = {}
+        # Currently, we only support the case where there's one income per paystub.
+        # That'll be fixed later!
+        user_data = {}
 
-            # Read income amount
-            income_amount_completer = FuzzyCompleter(CustomCompleter(list(str(x) for x in set(incomes_all['amount']))))
-            income_amount = self._read_user_income_amount(income_amount_completer, incomes_existing, payer)
-            
-            if not income_amount:
+        # Read income amount
+        income_amount_completer = FuzzyCompleter(CustomCompleter(list(str(x) for x in set(incomes_existing['amount']))))
+        income_amount = self._read_user_income_amount(income_amount_completer, incomes_existing, payer)
+
+        if not income_amount:
+            return None
+        user_data['amount'] = income_amount
+
+        # Read income details:
+        if "details" in incomes_all.keys():
+            income_details = self._read_user_income_details()
+            # Need to check if user returned an empty string or "None". None = user quit early and empty string = user entered nothing
+            if not isinstance(income_details, str) and not income_details:
                 return None
-            if income_amount == "done":
-                break
-            user_data['amount'] = income_amount
+            user_data['details'] = income_details
 
-            # Read income details:
-            if "details" in incomes_all.keys():
-                income_details = self._read_user_income_details()
-                # Need to check if user returned an empty string or "None". None = user quit early and empty string = user entered nothing
-                if not isinstance(income_details, str) and not income_details:
-                    return None
-                if income_details == "done":
-                    break
-                user_data['details'] = income_details
-
-            incomes.append(user_data)
+        incomes.append(user_data)
         
         return incomes
 
@@ -743,26 +770,26 @@ class CLI():
         income_user_data = self._read_user_incomes(database=database, payer=paystub_user_data['payer'])
         if not income_user_data:
             return None
-
+        print(income_user_data)
         # Calculate paystub total:
         paystub_total = 0
         for income in income_user_data:
-            amount = float(income[0])
+            amount = float(income['amount'])
             paystub_total += amount
         
         paystub_ledger_entries_user_data = self._read_user_paystub_ledger_entries(database, paystub_total)
         if not paystub_ledger_entries_user_data:
             return None
         
-        paystub_date = paystub_user_data[0]
-        paystub_payer = paystub_user_data[1]
+        paystub_date = paystub_user_data['date']
+        paystub_payer = paystub_user_data['payer']
 
         paystub = Paystub(total="{:.2f}".format(paystub_total), date=paystub_date, payer=paystub_payer)
 
         incomes = []
         for inc in income_user_data:
-            income_amount = inc[0]
-            income_details = inc[1]
+            income_amount = inc['amount']
+            income_details = inc['details']
             income = Income(amount=income_amount, paystub=paystub, details=income_details)
             incomes.append(income)
         

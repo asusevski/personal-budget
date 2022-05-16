@@ -9,6 +9,13 @@ import sqlite3
 
 @dataclass
 class Database:
+    """
+    A Database is a class to organize all the operations that actually interact with the sqlite database.
+    The path attribute is automatically set when the class is initialized.
+
+    Attributes:
+        path: The path to the database.
+    """
     def __init__(self):
         db_regex = re.compile(r'(.*)(\.db|\.sqlite3)$')
         path = "."
@@ -42,9 +49,6 @@ class Database:
         """
         Create a database connection to a SQLite database.
 
-        Args:
-            db_file: The database file to connect to.
-
         Yields:
             The database connection.
         """
@@ -62,10 +66,11 @@ class Database:
         Print the contents of a table in the database using package PrettyTable.
         By default, prints the entire table, but can be modified to print a subset of the table.
 
+        The function will first look to use the SQL query, then it will use the cols argument to print the whole table.
+
         Args:
-            database_name: The name of the database to print the table from.
             table_name: The name of the table to print.
-            sql_query: The SQL query to use to print the table (default is none, which prints the entire table).
+            sql_query: An optional sql query to use to print the table.
             cols: The names of the columns to print (default is none, which prints all columns).
         """
         with self._create_connection() as c:
@@ -90,7 +95,6 @@ class Database:
                         # the latter of which is directly before the column name that caused an error.
                         logging.error(f"Column {str(e).split(': ')[-1]} does not exist in table {table_name}.")
                         return
-
             else:
                 try:
                     c.execute(f"SELECT * FROM {table_name}")
@@ -106,7 +110,6 @@ class Database:
         Insert a row into a table in the database.
 
         Args:
-            database_name: The name of the database to insert the row into.
             table_name: The name of the table to insert the row into.
             values: The values to insert into the columns.
             cols: The names of the columns to insert into. Default is the empty list, which means all columns will be inserted.
@@ -139,6 +142,15 @@ class Database:
             return row_id
 
     def _create_empty_database(self, path, excluded_cols: list = []) -> None:
+        """
+        Creates an empty database with some fixed criteria, some criteria selected by the user.
+        This function must be passed certain columns to *not* include in creating the database.
+
+        Args:
+            path: The path to the database.
+            excluded_cols: The names of the columns to exclude from the database.
+        """
+        # This is part of the database creation, setting the database object's path
         self.path = path
         with self._create_connection() as c:
             # Payment types table (stores the names of the payment types eg: Visa, Cash, etc...)
@@ -252,7 +264,6 @@ class Database:
         Query the database and return the results.
 
         Args:
-            database_name: The name of the database to query.
             sql_query: The SQL query to use to query the database.
 
         Returns:
@@ -272,7 +283,6 @@ class Database:
         Searches for the expense in the database.
 
         Args:
-            database_name: The name of the database to search.
             expense_item: The item to search for.
             days: How many days to limit the search to.
 

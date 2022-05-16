@@ -95,6 +95,12 @@ class IncomeTransaction(Transaction):
     course, one can also just delete the expense and not have to worry about adding an income event for
     the refund, but we leave such details to the user.
 
+    We also leave room for an income event to be split across multuple "income events"; an example where that
+    would be useful is if a paycheck is paid in different parts (consider a waiter who may get $100 from tips
+    and $200 from salary, and the paycheck total would be $300).
+    
+    As of May 16th, 2020, we are not implementing this feature (there must be one income event per paystub for now).
+
     Attributes:
         paystub: The paystub associated with the transaction
         income_events: The income events associated with the transaction (all linked to the same paystub)
