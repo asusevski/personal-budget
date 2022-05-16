@@ -1,6 +1,7 @@
 from collections import Counter
 from Database.database import Database
 import datetime
+from operator import itemgetter 
 from prompt_toolkit.completion import FuzzyCompleter
 from prompt_toolkit.shortcuts import prompt
 import sys
@@ -159,7 +160,6 @@ class CLI():
 
         #expense_types = list(set(expense_map['type']))
         expense_types_no_duplicates = list(set(expense_types))
-        print(expense_types_no_duplicates)
         if expense_types_no_duplicates:
             type_counter = Counter(expense_types_no_duplicates)
             most_common_type = type_counter.most_common(1)[0][0]
@@ -197,27 +197,33 @@ class CLI():
 
         return expense_type
 
+    # @staticmethod
+    # def _read_expense_category(
+    #     database: Database, 
+    #     expense_name: str, 
+    #     expense_categories: list, 
+    #     category_map: dict, 
+    #     category_completer: FuzzyCompleter,
+    #     subcategory_completer: FuzzyCompleter
+    #     ) -> int:
+        
     @staticmethod
     def _read_expense_category(
         database: Database, 
         expense_name: str, 
-        expense_categories: list, 
-        category_map: dict, 
-        category_completer: FuzzyCompleter,
-        subcategory_completer: FuzzyCompleter
+        category_map_existing: dict,
+        category_map_all: dict
         ) -> int:
+
         database_name = database.path
         print(f"Printing categories...")
         database.print_table("categories")
 
-        expense_categories_no_duplicates = list(set(expense_categories))
-        print(expense_categories_no_duplicates)
-        if expense_categories_no_duplicates:
-            existing_expense_category_map = database._search_categories(expense_categories_no_duplicates)
+        if category_map_existing:
 
             # Find most common category and subcategory names:
-            category_counter = Counter(existing_expense_category_map['category'])
-            subcategory_counter = Counter(existing_expense_category_map['subcategory'])
+            category_counter = Counter(category_map_existing['category'])
+            subcategory_counter = Counter(category_map_existing['subcategory'])
             most_common_category_name = category_counter.most_common(1)[0][0]
             most_common_subcategory_name = subcategory_counter.most_common(1)[0][0]
 
@@ -229,7 +235,7 @@ class CLI():
         else:
             print("Select a category name or a row id from the table above or enter \"add\" to add a new category: ")
 
-        #category_completer = FuzzyCompleter(CustomCompleter(list(set(category_map['category']))))
+        category_completer = FuzzyCompleter(CustomCompleter(list(set(category_map_existing['category']))))
         expense_category = prompt(
             "> ",
             completer=category_completer,
@@ -241,11 +247,12 @@ class CLI():
             return "done"
 
         # User accepts suggestion
-        if expense_categories_no_duplicates and not expense_category:
-            expense_category_id = existing_expense_category_map['id'][existing_expense_category_map['category'].index(most_common_category_name)]
+        if category_map_existing and not expense_category:
+            expense_category_id = category_map_existing['id'][category_map_existing['category'].index(most_common_category_name)]
             return int(expense_category_id)
         
-        valid_choices = list(set(category_map['category'])) + ["q"] + ["add"] + ["done"]
+        # Verify user entered a valid input
+        valid_choices = list(set(category_map_all['category'])) + ["q"] + ["add"] + ["done"]
         while not expense_category.strip().isnumeric() and expense_category not in valid_choices:
             print("Invalid entry. Please try again: ")
             expense_category = prompt(
@@ -282,7 +289,12 @@ class CLI():
 
         # Else, the user entered a category name so we need to read the subcategory:
         print("Select a subcategory name from the table above: ")
-        #subcategory_completer = FuzzyCompleter(CustomCompleter(list(set(category_map['subcategory']))))
+        # Unfortunately, since the function that calls this function can't possibly know beforehand what category the user will pick,
+        # we have to create the subcategory completer after receiving user input on what category they want to enter.
+
+        # This is pretty unreadable, but it basically finds all potential subcategories that match the category name the user entered.
+        subcategory_values = [x for x in category_map_all['subcategory'] if category_map_all['category'][category_map_all['subcategory'].index(x)] == expense_category]
+        subcategory_completer = FuzzyCompleter(CustomCompleter(subcategory_values))
         expense_subcategory = prompt(
                 "> ",
                 completer=subcategory_completer,
@@ -297,7 +309,7 @@ class CLI():
         valid = False
         while not valid:
             try:
-                expense_category_id = category_map['id'][category_map['subcategory'].index(expense_subcategory)]
+                expense_category_id = category_map_all['id'][category_map_all['subcategory'].index(expense_subcategory)]
                 valid = True
             except ValueError:
                 print("Invalid subcategory name. Please try again: ")
@@ -383,17 +395,20 @@ class CLI():
             
             # Read category id:
             if "category_id" in expense_map.keys():
-                categories_map = database._search_categories()
-                expense_categories = expense_map['category_id']
-                category_completer = FuzzyCompleter(CustomCompleter(expense_categories))
-                subcategory_completer = FuzzyCompleter(CustomCompleter(categories_map['subcategory']))
+                categories_map_all = database._search_categories()
+                
+                # Getting all category ids that have ever been used to categorize the expense:
+                expence_category_ids = list(set(expense_map['category_id']))
+
+                # Need the existing categories for suggestions and need the full categories table for prompt
+                # It is probably suboptimal to call _search_categories twice, but this is how it will remain
+                categories_map_existing = database._search_categories(expence_category_ids)
+
                 expense_category_id = self._read_expense_category(
                     database, 
                     expense_name, 
-                    expense_categories, 
-                    categories_map, 
-                    category_completer, 
-                    subcategory_completer)
+                    categories_map_existing, 
+                    categories_map_all)
                 if not expense_category_id:
                     return None
                 if expense_category_id == "done":
