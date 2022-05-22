@@ -821,13 +821,14 @@ class CLI():
             elif choice == 3:
                 self.print_table(table_menu, database)
             elif choice == 4:
-                self.delete_row(index_menu)
+                self.delete_row(index_menu, database)
             elif choice == 5:
                 self.execute_sql_query(database)
             elif choice == 6:
                     self.exit()
     
-    def _initialize_db(self, db: Database) -> None:
+    @staticmethod
+    def _initialize_db(db: Database) -> None:
         # Initialize budget database
         print("No database found, creating a new database...")
         print("Enter database name (default name is budget): ")
@@ -969,22 +970,26 @@ want to have the category be listed as \'groceries\' and the subcategory be \'ch
                 else:
                     print(f"Income transaction failed to be added. Error message: {retval}")
     
-    def print_table(self, menu: Menu, database: Database) -> None:
+    @staticmethod
+    def print_table(menu: Menu, database: Database) -> None:
         table_name = menu.run()
         database.print_table(table_name)
 
-    def delete_row(self, menu: Menu, database: Database) -> None:
+    @staticmethod
+    def delete_row(menu: Menu, database: Database) -> None:
         table_name, row_id = menu.run(database)
 
         database.delete_row(table_name, row_id)
         print("Row deleted.")
-
-    def execute_sql_query(self, database: Database) -> None:
+    
+    @staticmethod
+    def execute_sql_query(database: Database) -> None:
         print("Enter SQL query: ")
         sql_query = input("> ")
         print("Executing query...")
         vals = database.query_db(sql_query)
         print(f"Results: {vals}")
 
-    def exit(self) -> None:
+    @staticmethod
+    def exit() -> None:
         sys.exit(0)
