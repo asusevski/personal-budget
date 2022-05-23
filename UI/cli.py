@@ -394,7 +394,12 @@ class CLI():
 
                 # Need the existing categories for suggestions and need the full categories table for prompt
                 # It is probably suboptimal to call _search_categories twice, but this is how it will remain
-                categories_map_existing = database._search_categories(expence_category_ids)
+                # Only do this if there are categories already existing, otherwise _search_categories will be
+                # passed an empty list, which results in returning the whole table.
+                if expence_category_ids:
+                    categories_map_existing = database._search_categories(expence_category_ids)
+                else:
+                    categories_map_existing = {}
 
                 expense_category_id = self._read_expense_category(
                     database, 
