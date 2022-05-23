@@ -32,7 +32,7 @@ class ExpenseCategory():
         Effects:
             Modifies table 'categories' in the database.
         """
-        expense_category_id = database._insert_into_table(self, 'categories', cols=['category', 'subcategory'], \
+        expense_category_id = database._insert_into_table('categories', cols=['category', 'subcategory'], \
             values=[self.category, self.subcategory])
         return expense_category_id
 

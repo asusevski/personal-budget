@@ -274,7 +274,7 @@ class CLI():
             if expense_subcategory.lower() == "done":
                 return "done"
             expense_cat = ExpenseCategory(expense_category_name, expense_subcategory)
-            expense_category_id = expense_cat.insert_into_db(database_name)
+            expense_category_id = expense_cat.insert_into_db(database)
             return int(expense_category_id)
 
         # User enters row id
