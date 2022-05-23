@@ -566,37 +566,6 @@ class CLI():
             valid = True
         return {'date': paystub_date, 'payer': paystub_payer}
 
-    # @staticmethod
-    # def _read_user_income_name(income_name_completer: FuzzyCompleter) -> str:
-    #     print("Enter income name (enter nothing or \"done\" if done entering expenses): ")
-    #     income_name = prompt(
-    #         "> ",
-    #         completer=income_name_completer,
-    #         complete_while_typing=True
-    #     )
-    #     if income_name.lower() == "q":
-    #         return None
-    #     if income_name.lower() == "done":
-    #         return "done"
-        
-    #     # Enforce that the expense name cannot be empty string
-    #     valid = False
-    #     while not valid:
-    #         if not income_name:
-    #             print("Expense name cannot be empty.")
-    #             income_name = prompt(
-    #             "> ",
-    #             completer=income_name_completer,
-    #             complete_while_typing=True
-    #             )       
-    #             if income_name.lower() == "q":
-    #                 return None
-    #             if income_name.lower() == "done":
-    #                 return "done"
-    #             continue
-    #         valid = True
-    #     return income_name
-
     @staticmethod
     def _read_user_income_amount(
         income_amount_completer: FuzzyCompleter,
