@@ -5,6 +5,17 @@ from UI.ui import UI
 
 @dataclass
 class Program:
+    """
+    Program is a class to handle the high level program functions. 
+    Upon initializing, Program initializes a Database object and,
+    if there is no database file (.sqlite or .db) found in a subdirectory, 
+    the UI handles initializing a database.
+
+    Attributes:
+        ui: UI
+        database: Database
+    
+    """
     ui : UI
     database: Database
 
