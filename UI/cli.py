@@ -780,7 +780,7 @@ class CLI():
     def run(self, database: Database) -> None:
         # initialize prompt session !!
         main_menu_options = ["Insert expense transaction", "Insert income transaction", "Print table", "Delete row", \
-                         "Execute arbitrary sql query", "Exit"]
+                         "Execute arbitrary sql query", "Scan receipt of expenses", "Exit"]
         main_menu = MainMenu(main_menu_options)
         table_options = database._get_tables()
         table_menu = TableMenu(options=table_options)
@@ -799,6 +799,8 @@ class CLI():
             elif choice == 5:
                 self.execute_sql_query(database)
             elif choice == 6:
+                self.scan_receipt(database)
+            elif choice == 7:
                     self.exit()
     
     @staticmethod
@@ -963,6 +965,9 @@ want to have the category be listed as \'groceries\' and the subcategory be \'ch
         print("Executing query...")
         vals = database.query_db(sql_query)
         print(f"Results: {vals}")
+
+    def scan_receipt(self, database: Datbase):
+        pass
 
     @staticmethod
     def exit() -> None:

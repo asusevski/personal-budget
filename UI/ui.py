@@ -29,6 +29,9 @@ class UI(Protocol):
     def execute_sql_query(database: Database) -> None:
         ...
 
+    def scan_receipt(self, database: Database) -> None:
+        ...
+
     @staticmethod
     def exit() -> None:
         ...
