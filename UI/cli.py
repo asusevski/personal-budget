@@ -1,8 +1,12 @@
 from collections import Counter
+import cv2
 from Database.database import Database
 import datetime
+import numpy as np
+from PIL import Image
 from prompt_toolkit.completion import FuzzyCompleter
 from prompt_toolkit.shortcuts import prompt
+import pytesseract
 import sys
 from Transactions.categories import Account, ExpenseCategory
 from Transactions.expenses import Expense, LedgerEntry, Receipt
@@ -966,8 +970,18 @@ want to have the category be listed as \'groceries\' and the subcategory be \'ch
         vals = database.query_db(sql_query)
         print(f"Results: {vals}")
 
-    def scan_receipt(self, database: Datbase):
-        pass
+    def scan_receipt(self, database: Database):
+        print("Disclaimer: this feature is a work in progress, use at own risk.\nCurrently, only prints receipt text (and the text isn't exactly accurate yet!).")
+        print("Enter receipt path: ")
+        receipt_path = input("> ")
+        print("Scanning receipt...")
+        receipt = np.array(Image.open(receipt_path))
+        norm_receipt = np.zeros((receipt.shape[0], receipt.shape[1]))
+        norm_receipt = cv2.normalize(receipt, norm_receipt, 0, 255, cv2.NORM_MINMAX)
+        norm_receipt = cv2.threshold(norm_receipt, 100, 255, cv2.THRESH_BINARY)[1]
+        norm_receipt = cv2.GaussianBlur(norm_receipt, (1, 1), 0)
+        text = pytesseract.image_to_string(norm_receipt)
+        print(text)
 
     @staticmethod
     def exit() -> None:

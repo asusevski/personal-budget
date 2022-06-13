@@ -133,7 +133,7 @@ dmypy.json
 *.sqlite3
 
 # Receipt data
-Data/Receipts/*.jpg
+/Data/Receipts/*.jpg
 
 # Temporary trying stuff
 tmp.py

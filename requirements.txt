@@ -1,2 +1,6 @@
+numpy==1.22.4
+opencv_python==4.6.0.66
+Pillow==9.1.1
 prettytable==3.1.1
 prompt_toolkit==3.0.29
+pytesseract==0.3.10
