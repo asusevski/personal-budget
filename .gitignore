@@ -132,8 +132,8 @@ dmypy.json
 *.db
 *.sqlite3
 
-# Receipt data (everything inside ./Data/Receipts)
-Data/Receipts/
+# Receipt data
+Data/Receipts/*.jpg
 
 # Temporary trying stuff
 tmp.py
