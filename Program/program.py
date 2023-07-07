@@ -23,7 +23,7 @@ class Program:
         self.ui = ui
         db = Database()
         if not db.path:
-            db = self.ui._initialize_db(db)
+            self.ui._initialize_db(db)
         self.database = db
 
     def run(self) -> None:

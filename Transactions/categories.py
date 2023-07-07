@@ -18,6 +18,7 @@ class ExpenseCategory():
     """
     category: str
     subcategory: str
+    category_type: str
 
     def insert_into_db(self, database: Database) -> int:
         """
@@ -32,8 +33,12 @@ class ExpenseCategory():
         Effects:
             Modifies table 'categories' in the database.
         """
-        expense_category_id = database._insert_into_table('categories', cols=['category', 'subcategory'], \
-            values=[self.category, self.subcategory])
+        if not self.category_type:
+            expense_category_id = database._insert_into_table('categories', cols=['category', 'subcategory'], \
+                values=[self.category, self.subcategory])
+        else:
+            expense_category_id = database._insert_into_table('categories', cols=['category', 'subcategory', 'category_type'], \
+                values=[self.category, self.subcategory, self.category_type])
         return expense_category_id
 
 

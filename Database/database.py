@@ -159,16 +159,14 @@ class Database:
                 name TEXT NOT NULL,
                 description TEXT
             )""")
-
             # Categories table (stores category and subcategory of an expense, eg: groceries, rent, etc...)
             # Checking for any columns the user does NOT want to use
             create_expense_commands = {
                 'id': "id INTEGER PRIMARY KEY AUTOINCREMENT",
                 'item': "item TEXT NOT NULL",
                 'amount': "amount REAL NOT NULL",
-                'type': "type TEXT NOT NULL CONSTRAINT valid_type CHECK(Type IN ('want', 'need', 'savings'))",
                 'receipt_id': "receipt_id INTEGER NOT NULL",
-                'category_id': "category_id INTEGER NOT NULL",
+                'category_id': "category_id INTEGER NOT NULL", # NOTE this should not be here as it now belongs to the category table 
                 'details': "details TEXT",
                 "receipt_id_fk": "FOREIGN KEY(receipt_id) REFERENCES receipts(id)",
                 "category_id_fk": "FOREIGN KEY(category_id) REFERENCES categories(id)"
@@ -176,18 +174,27 @@ class Database:
             expenses = "CREATE TABLE IF NOT EXISTS expenses ("
             for key, value in create_expense_commands.items():
                 if key not in excluded_cols:
-                    if key == "category_id_fk" and "category_id" in excluded_cols:
+                    # If user creates category table then category_id_fk should be included
+                    if key == "category_id_fk" and "category_table" in excluded_cols:
                         continue
                     expenses += f"{value}, "
             expenses = expenses[:-2] + ")"
 
-            if "category_id" not in excluded_cols:
-                c.execute("""CREATE TABLE IF NOT EXISTS categories (
-                    id INTEGER PRIMARY KEY,
-                    category TEXT NOT NULL,
-                    subcategory TEXT
-                )""")
-
+            if "category_table" not in excluded_cols:
+                # If user wants to track category type, add type to categories table
+                if "category_type" not in excluded_cols:
+                    c.execute("""CREATE TABLE IF NOT EXISTS categories (
+                        id INTEGER PRIMARY KEY,
+                        category TEXT NOT NULL,
+                        subcategory TEXT,
+                        category_type TEXT NOT NULL CONSTRAINT valid_type CHECK(category_type IN ('want', 'need', 'savings'))
+                    )""")
+                else:
+                    c.execute("""CREATE TABLE IF NOT EXISTS categories (
+                        id INTEGER PRIMARY KEY,
+                        category TEXT NOT NULL,
+                        subcategory TEXT
+                    )""")
             # Expenses table (stores details about a single expense eg: details on each item of a receipt)
             c.execute(expenses)
 

@@ -214,7 +214,6 @@ class CLI():
         category_map_all: dict
         ) -> int:
 
-        database_name = database.path
         print(f"Printing categories...")
         database.print_table("categories")
 
@@ -277,7 +276,21 @@ class CLI():
                 return None
             if expense_subcategory.lower() == "done":
                 return "done"
-            expense_cat = ExpenseCategory(expense_category_name, expense_subcategory)
+            # check if table categories exists and has column category_type
+            if "category_type" in category_map_all:
+                all_types = ['want', 'need', 'savings']
+                print("Enter category type (want, need, or savings): ")
+                category_type = input("> ").lower()
+                while category_type not in all_types:
+                    print("Invalid type entered, please try again: ")
+                    category_type = input("> ").lower()
+                    if category_type == "q":
+                        return None
+                    if category_type.lower() == "done":
+                        return "done"
+            else:
+                category_type = None
+            expense_cat = ExpenseCategory(expense_category_name, expense_subcategory, category_type)
             expense_category_id = expense_cat.insert_into_db(database)
             return int(expense_category_id)
 
@@ -345,7 +358,6 @@ class CLI():
             Either a list of the following:
                 expense_name: The name of the expense.
                 expense_amount: The amount of the expense.
-                expense_type: The type of the expense.
                 expense_details: Any details about the expense.
                 expense_category_id: The category id of the expense.
             Or None if the user quits early.
@@ -376,18 +388,6 @@ class CLI():
             if expense_amount == "done":
                 break
             user_data['amount'] = expense_amount
-            
-            # Read expense type:
-            if "type" in expense_map.keys():
-                all_expense_types = ["want", "need", "savings"]
-                expense_types = expense_map['type']
-                expense_type_completer = FuzzyCompleter(CustomCompleter(all_expense_types))
-                expense_type = self._read_expense_type(expense_name, expense_types, expense_type_completer)
-                if not expense_amount:
-                    return None
-                if expense_amount == "done":
-                    break
-                user_data['type'] = expense_type
             
             # Read category id:
             if "category_id" in expense_map.keys():
@@ -502,8 +502,8 @@ class CLI():
             expense_type = exp.get('type', None)
             expense_category = exp.get('category_id', None)
             expense_details = exp.get('details', None)
-            expense = Expense(item=expense_name, amount=f"{expense_amount:.2f}", type=expense_type,\
-                            details=expense_details, receipt=receipt, category_id=expense_category)
+            expense = Expense(item=expense_name, amount=f"{expense_amount:.2f}", details=expense_details, \
+                             receipt=receipt, category_id=expense_category)
             expenses.append(expense)
         
         ledger_entries = []
@@ -827,35 +827,37 @@ class CLI():
 
         # Optional columns:
         excluded_cols = []
-        print("Would you like to keep track of the following columns? (y/n)")
-
-        # Expense type:
-        print("Expense type (ie: for each expense, would you like to input if the expense is a want, need, or savings expense) (y/n):")
-        expense_type = input("> ")
+        
+        # Category table
+        print("Would you like to track expense categories? A category table would be created with a category and a subcategory column, as well as a category type which would track if the category is a want, a need, or a savings event. This would allow you to categorize each expense (y/n):")
+        category_table = input("> ")
         valid = False
         while not valid:
-            if expense_type.lower() == "n":
-                excluded_cols.append("type")
+            if category_table.lower() == "n":
+                excluded_cols.append("category_table")
                 valid = True
-            elif expense_type.lower() == "y":
+            elif category_table.lower() == "y":
                 valid = True
             else:
                 print("Invalid input, please enter 'y' or 'n': ")
-                expense_type = input("> ")
-
-        # Expense category:
-        print("Expense category (ie: a category table would be created with a category and a subcategory column. This would allow you to categorize each expense (y/n):")
-        expense_category = input("> ")
-        valid = False
-        while not valid:
-            if expense_category.lower() == "n":
-                excluded_cols.append("category_id")
-                valid = True
-            elif expense_category.lower() == "y":
-                valid = True
-            else:
-                print("Invalid input, please enter 'y' or 'n': ")
-                expense_category = input("> ")
+                category_table = input("> ")
+        
+        # Category type
+        if category_table.lower() == "y":
+            print("Would you like to track expense category types? The category table will be created with a category type column, which would track if the category is a want, a need, or a savings event. (y/n):")
+            category_type = input("> ")
+            valid = False
+            while not valid:
+                if category_type.lower() == "n":
+                    excluded_cols.append("category_type")
+                    valid = True
+                elif category_type.lower() == "y":
+                    valid = True
+                else:
+                    print("Invalid input, please enter 'y' or 'n': ")
+                    category_type = input("> ")
+        else:
+            excluded_cols.append("category_type")
 
         # Expense details:
         print("Expense details (ie: when entering expenses, there would be an option to enter any details about the expense (y/n):")
@@ -900,25 +902,35 @@ class CLI():
             account = Account(payment_name, account_description)
             account.insert_into_db(db)
 
-        if "category_id" not in excluded_cols:
+        # Initialize expense categories
+        if "category_table" not in excluded_cols:
             print("""Initializing expense categories...
             
-Each category entry will have a category and subcategory.
 The category will be a broad categorization and the subcategory, an optional field, 
 will be used to make the category more clear (particularly useful for groceries -- one may 
 want to have the category be listed as \'groceries\' and the subcategory be \'chicken\', for example).
-            
+
+The category type is one of "Want", "Need", or "Savings".
             """)
 
             while True:
                 print("Enter category name (eg: grocery, bills, etc...) or q if you are done entering categories: ")
-                category_name = input("> ")
-                if category_name == "" or category_name == "q":
+                category_name = input("> ").lower()
+                if category_name == "" or category_name.lower() == "q":
                     break
                 print("Enter subcategory (can be left blank): ")
-                subcategory = input("> ")
-                expense_category = ExpenseCategory(category_name, subcategory)
-                expense_category.insert_into_db(database_name)
+                subcategory = input("> ").lower()
+                if category_type not in excluded_cols:
+                    print("Enter category type (one of want, need, or savings): ")
+                    all_expense_types = ["want", "need", "savings"]
+                    category_type = input("> ").lower()
+                    while category_type not in all_expense_types:
+                        print("Invalid input, please enter one of want, need, or savings: ")
+                        category_type = input("> ").lower()
+                else:
+                    category_type = None
+                expense_category = ExpenseCategory(category_name, subcategory, category_type)
+                expense_category.insert_into_db(db)
 
     def insert_expense_transactions(self, database_name: str) -> None:
         print("Enter q at any time to stop entering transactions.")

@@ -56,7 +56,6 @@ class Expense:
     item: str
     amount: str
     receipt: Receipt
-    type: str = None
     category_id: int = None
     details: str = None
 
